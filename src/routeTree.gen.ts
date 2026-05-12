@@ -14,6 +14,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as LacadoRouteImport } from './routes/lacado'
 import { Route as HistorialRouteImport } from './routes/historial'
 import { Route as ExtrasRouteImport } from './routes/extras'
+import { Route as DestinatariosRouteImport } from './routes/destinatarios'
 import { Route as AnodizadoRouteImport } from './routes/anodizado'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -42,6 +43,11 @@ const ExtrasRoute = ExtrasRouteImport.update({
   path: '/extras',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DestinatariosRoute = DestinatariosRouteImport.update({
+  id: '/destinatarios',
+  path: '/destinatarios',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AnodizadoRoute = AnodizadoRouteImport.update({
   id: '/anodizado',
   path: '/anodizado',
@@ -56,6 +62,7 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/anodizado': typeof AnodizadoRoute
+  '/destinatarios': typeof DestinatariosRoute
   '/extras': typeof ExtrasRoute
   '/historial': typeof HistorialRoute
   '/lacado': typeof LacadoRoute
@@ -65,6 +72,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/anodizado': typeof AnodizadoRoute
+  '/destinatarios': typeof DestinatariosRoute
   '/extras': typeof ExtrasRoute
   '/historial': typeof HistorialRoute
   '/lacado': typeof LacadoRoute
@@ -75,6 +83,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/anodizado': typeof AnodizadoRoute
+  '/destinatarios': typeof DestinatariosRoute
   '/extras': typeof ExtrasRoute
   '/historial': typeof HistorialRoute
   '/lacado': typeof LacadoRoute
@@ -86,6 +95,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/anodizado'
+    | '/destinatarios'
     | '/extras'
     | '/historial'
     | '/lacado'
@@ -95,6 +105,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/anodizado'
+    | '/destinatarios'
     | '/extras'
     | '/historial'
     | '/lacado'
@@ -104,6 +115,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/anodizado'
+    | '/destinatarios'
     | '/extras'
     | '/historial'
     | '/lacado'
@@ -114,6 +126,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AnodizadoRoute: typeof AnodizadoRoute
+  DestinatariosRoute: typeof DestinatariosRoute
   ExtrasRoute: typeof ExtrasRoute
   HistorialRoute: typeof HistorialRoute
   LacadoRoute: typeof LacadoRoute
@@ -158,6 +171,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExtrasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/destinatarios': {
+      id: '/destinatarios'
+      path: '/destinatarios'
+      fullPath: '/destinatarios'
+      preLoaderRoute: typeof DestinatariosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/anodizado': {
       id: '/anodizado'
       path: '/anodizado'
@@ -178,6 +198,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AnodizadoRoute: AnodizadoRoute,
+  DestinatariosRoute: DestinatariosRoute,
   ExtrasRoute: ExtrasRoute,
   HistorialRoute: HistorialRoute,
   LacadoRoute: LacadoRoute,
@@ -187,3 +208,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
