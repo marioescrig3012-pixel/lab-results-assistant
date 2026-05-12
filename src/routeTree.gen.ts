@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResumenRouteImport } from './routes/resumen'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LacadoRouteImport } from './routes/lacado'
+import { Route as HistorialRouteImport } from './routes/historial'
 import { Route as ExtrasRouteImport } from './routes/extras'
 import { Route as AnodizadoRouteImport } from './routes/anodizado'
 import { Route as IndexRouteImport } from './routes/index'
@@ -29,6 +30,11 @@ const LoginRoute = LoginRouteImport.update({
 const LacadoRoute = LacadoRouteImport.update({
   id: '/lacado',
   path: '/lacado',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HistorialRoute = HistorialRouteImport.update({
+  id: '/historial',
+  path: '/historial',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExtrasRoute = ExtrasRouteImport.update({
@@ -51,6 +57,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/anodizado': typeof AnodizadoRoute
   '/extras': typeof ExtrasRoute
+  '/historial': typeof HistorialRoute
   '/lacado': typeof LacadoRoute
   '/login': typeof LoginRoute
   '/resumen': typeof ResumenRoute
@@ -59,6 +66,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/anodizado': typeof AnodizadoRoute
   '/extras': typeof ExtrasRoute
+  '/historial': typeof HistorialRoute
   '/lacado': typeof LacadoRoute
   '/login': typeof LoginRoute
   '/resumen': typeof ResumenRoute
@@ -68,20 +76,36 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/anodizado': typeof AnodizadoRoute
   '/extras': typeof ExtrasRoute
+  '/historial': typeof HistorialRoute
   '/lacado': typeof LacadoRoute
   '/login': typeof LoginRoute
   '/resumen': typeof ResumenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/anodizado' | '/extras' | '/lacado' | '/login' | '/resumen'
+  fullPaths:
+    | '/'
+    | '/anodizado'
+    | '/extras'
+    | '/historial'
+    | '/lacado'
+    | '/login'
+    | '/resumen'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/anodizado' | '/extras' | '/lacado' | '/login' | '/resumen'
+  to:
+    | '/'
+    | '/anodizado'
+    | '/extras'
+    | '/historial'
+    | '/lacado'
+    | '/login'
+    | '/resumen'
   id:
     | '__root__'
     | '/'
     | '/anodizado'
     | '/extras'
+    | '/historial'
     | '/lacado'
     | '/login'
     | '/resumen'
@@ -91,6 +115,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AnodizadoRoute: typeof AnodizadoRoute
   ExtrasRoute: typeof ExtrasRoute
+  HistorialRoute: typeof HistorialRoute
   LacadoRoute: typeof LacadoRoute
   LoginRoute: typeof LoginRoute
   ResumenRoute: typeof ResumenRoute
@@ -117,6 +142,13 @@ declare module '@tanstack/react-router' {
       path: '/lacado'
       fullPath: '/lacado'
       preLoaderRoute: typeof LacadoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/historial': {
+      id: '/historial'
+      path: '/historial'
+      fullPath: '/historial'
+      preLoaderRoute: typeof HistorialRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/extras': {
@@ -147,6 +179,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AnodizadoRoute: AnodizadoRoute,
   ExtrasRoute: ExtrasRoute,
+  HistorialRoute: HistorialRoute,
   LacadoRoute: LacadoRoute,
   LoginRoute: LoginRoute,
   ResumenRoute: ResumenRoute,
@@ -154,3 +187,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
