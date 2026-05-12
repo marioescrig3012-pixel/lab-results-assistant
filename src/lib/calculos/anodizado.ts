@@ -17,7 +17,7 @@ export const anodizado: SectionDef = {
           min: 2,
           max: 4,
           decimals: 2,
-          compute: (i) => (i.des1_naoh * 4.5) / 10,
+          compute: (i) => i.des1_naoh * 0.45,
         },
       ],
     },
@@ -34,7 +34,7 @@ export const anodizado: SectionDef = {
           min: 2,
           max: 4,
           decimals: 2,
-          compute: (i) => (i.des2_naoh * 4.5) / 10,
+          compute: (i) => i.des2_naoh * 0.45,
         },
       ],
     },
@@ -44,26 +44,28 @@ export const anodizado: SectionDef = {
       inputs: [
         { key: "flash_a", label: "A · HCl 1M sin KF", unit: "ml", default: 0 },
         { key: "flash_b", label: "B · HCl 1M con KF", unit: "ml", default: 0 },
+        { key: "flash_vol", label: "Volumen muestra", unit: "ml", default: 10 },
       ],
       results: [
         {
           key: "flash_sosa",
-          label: "Sosa Flash",
+          label: "Sosa",
           unit: "g/L",
-          rangeLabel: "60 – 80 g/L",
-          min: 60,
-          max: 80,
+          rangeLabel: "50 – 70 g/L",
+          min: 50,
+          max: 70,
           decimals: 1,
-          compute: (i) => 20 * i.flash_a - 6.7 * i.flash_b,
+          compute: (i) => (i.flash_vol > 0 ? (i.flash_a * 40) / i.flash_vol : NaN),
         },
         {
           key: "flash_al",
-          label: "Aluminio Flash",
+          label: "Aluminio",
           unit: "g/L",
-          rangeLabel: "máx. 30 g/L",
-          max: 30,
-          decimals: 2,
-          compute: (i) => (i.flash_b * 13.6) / 3.03,
+          rangeLabel: "0 – 60 g/L",
+          min: 0,
+          max: 60,
+          decimals: 1,
+          compute: (i) => (i.flash_a - i.flash_b) * 9,
         },
       ],
     },
@@ -73,27 +75,28 @@ export const anodizado: SectionDef = {
       inputs: [
         { key: "sv_a", label: "A · HCl 1M sin KF", unit: "ml", default: 0 },
         { key: "sv_b", label: "B · HCl 1M con KF", unit: "ml", default: 0 },
+        { key: "sv_vol", label: "Volumen muestra", unit: "ml", default: 10 },
       ],
       results: [
         {
           key: "sv_sosa",
           label: "Sosa",
           unit: "g/L",
-          rangeLabel: "80 – 120 g/L",
-          min: 80,
-          max: 120,
+          rangeLabel: "70 – 110 g/L",
+          min: 70,
+          max: 110,
           decimals: 1,
-          compute: (i) => 20 * i.sv_a - 6.7 * i.sv_b,
+          compute: (i) => (i.sv_vol > 0 ? (i.sv_a * 40) / i.sv_vol : NaN),
         },
         {
           key: "sv_al",
           label: "Aluminio",
           unit: "g/L",
-          rangeLabel: "120 – 150 g/L",
-          min: 120,
-          max: 150,
-          decimals: 2,
-          compute: (i) => (i.sv_b * 13.6) / 3.03,
+          rangeLabel: "90 – 200 g/L",
+          min: 90,
+          max: 200,
+          decimals: 1,
+          compute: (i) => (i.sv_a - i.sv_b) * 9,
         },
         {
           key: "sv_ratio",
@@ -102,20 +105,21 @@ export const anodizado: SectionDef = {
           min: 0.8,
           max: 1,
           decimals: 2,
-          compute: (i) =>
-            i.sv_b > 0
-              ? (20 * i.sv_a - 6.7 * i.sv_b) / ((i.sv_b * 13.6) / 3.03)
-              : NaN,
+          compute: (i) => {
+            const sosa = i.sv_vol > 0 ? (i.sv_a * 40) / i.sv_vol : NaN;
+            const al = (i.sv_a - i.sv_b) * 9;
+            return al > 0 ? sosa / al : NaN;
+          },
         },
       ],
     },
     {
       key: "satinado_nueva",
-      title: "Satinado Nueva (Alufinish)",
+      title: "Satinado Nueva (Alufinish — lunes/jueves)",
       inputs: [
         { key: "sn_n", label: "N · H₂SO₄ 1N (sosa)", unit: "ml", default: 0 },
         { key: "sn_a", label: "A · H₂SO₄ 1N (Al)", unit: "ml", default: 0 },
-        { key: "sn_aditivo", label: "Aditivo (titulación)", unit: "ml", default: 0 },
+        { key: "sn_aditivo", label: "Aditivo (titulación)", unit: "ptos", default: 0 },
       ],
       results: [
         {
@@ -140,10 +144,24 @@ export const anodizado: SectionDef = {
         {
           key: "sn_aditivo_r",
           label: "Aditivo",
-          rangeLabel: "≥ 22",
+          unit: "ptos",
+          rangeLabel: "≥ 22 ptos",
           min: 22,
           decimals: 2,
           compute: (i) => i.sn_aditivo,
+        },
+        {
+          key: "sn_ratio",
+          label: "Relación NaOH/Al",
+          rangeLabel: "0,8 – 1,0",
+          min: 0.8,
+          max: 1,
+          decimals: 2,
+          compute: (i) => {
+            const sosa = i.sn_n * 4.5;
+            const al = (5 * i.sn_a - i.sn_n) * 0.73;
+            return al > 0 ? sosa / al : NaN;
+          },
         },
       ],
     },
@@ -222,7 +240,7 @@ export const anodizado: SectionDef = {
           rangeLabel: "≥ 200 g/L",
           min: 200,
           decimals: 1,
-          compute: (i) => (i.an_a / 4) * 9.8 * 10,
+          compute: (i) => i.an_a * 0.245 * 10,
         },
         {
           key: "an_sulf_libre",
@@ -232,7 +250,7 @@ export const anodizado: SectionDef = {
           min: 185,
           max: 200,
           decimals: 1,
-          compute: (i) => (i.an_b / 4) * 9.8 * 10,
+          compute: (i) => i.an_b * 0.245 * 10,
         },
         {
           key: "an_al",
@@ -241,11 +259,7 @@ export const anodizado: SectionDef = {
           rangeLabel: "máx. 14 g/L",
           max: 14,
           decimals: 2,
-          compute: (i) => {
-            const D = ((i.an_a / 4) * 9.8) / 10;
-            const R = ((i.an_b / 4) * 9.8) / 10;
-            return (D - R) * 1.8 * 10;
-          },
+          compute: (i) => (i.an_a * 0.245 - i.an_b * 0.245) * 1.8 * 10,
         },
       ],
     },
@@ -264,7 +278,7 @@ export const anodizado: SectionDef = {
           key: "cu_cond_r",
           label: "Conductividad",
           unit: "µS",
-          rangeLabel: "< 100 µS",
+          rangeLabel: "máx. 100 µS",
           max: 100,
           compute: (i) => i.cu_cond,
         },
@@ -281,7 +295,7 @@ export const anodizado: SectionDef = {
       results: [
         {
           key: "co_estano",
-          label: "Estaño",
+          label: "Estaño (producto)",
           unit: "g/L",
           rangeLabel: "15 – 18 g/L",
           min: 15,
@@ -324,7 +338,7 @@ export const anodizado: SectionDef = {
     },
     {
       key: "oro",
-      title: "Cuba de Oro",
+      title: "Cuba de Oro (lunes/jueves)",
       inputs: [
         { key: "oro_v", label: "Volumen baño valorado", unit: "ml", default: 1 },
         { key: "oro_naoh", label: "Volumen NaOH 1N", unit: "ml", default: 0 },
