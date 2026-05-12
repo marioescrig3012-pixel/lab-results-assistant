@@ -9,8 +9,32 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as LacadoRouteImport } from './routes/lacado'
+import { Route as ExtrasRouteImport } from './routes/extras'
+import { Route as AnodizadoRouteImport } from './routes/anodizado'
 import { Route as IndexRouteImport } from './routes/index'
 
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LacadoRoute = LacadoRouteImport.update({
+  id: '/lacado',
+  path: '/lacado',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExtrasRoute = ExtrasRouteImport.update({
+  id: '/extras',
+  path: '/extras',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnodizadoRoute = AnodizadoRouteImport.update({
+  id: '/anodizado',
+  path: '/anodizado',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -19,28 +43,72 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/anodizado': typeof AnodizadoRoute
+  '/extras': typeof ExtrasRoute
+  '/lacado': typeof LacadoRoute
+  '/login': typeof LoginRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/anodizado': typeof AnodizadoRoute
+  '/extras': typeof ExtrasRoute
+  '/lacado': typeof LacadoRoute
+  '/login': typeof LoginRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/anodizado': typeof AnodizadoRoute
+  '/extras': typeof ExtrasRoute
+  '/lacado': typeof LacadoRoute
+  '/login': typeof LoginRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/anodizado' | '/extras' | '/lacado' | '/login'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/anodizado' | '/extras' | '/lacado' | '/login'
+  id: '__root__' | '/' | '/anodizado' | '/extras' | '/lacado' | '/login'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AnodizadoRoute: typeof AnodizadoRoute
+  ExtrasRoute: typeof ExtrasRoute
+  LacadoRoute: typeof LacadoRoute
+  LoginRoute: typeof LoginRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lacado': {
+      id: '/lacado'
+      path: '/lacado'
+      fullPath: '/lacado'
+      preLoaderRoute: typeof LacadoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/extras': {
+      id: '/extras'
+      path: '/extras'
+      fullPath: '/extras'
+      preLoaderRoute: typeof ExtrasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/anodizado': {
+      id: '/anodizado'
+      path: '/anodizado'
+      fullPath: '/anodizado'
+      preLoaderRoute: typeof AnodizadoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -53,7 +121,21 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AnodizadoRoute: AnodizadoRoute,
+  ExtrasRoute: ExtrasRoute,
+  LacadoRoute: LacadoRoute,
+  LoginRoute: LoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
