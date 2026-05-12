@@ -9,8 +9,50 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ResumenRouteImport } from './routes/resumen'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as LacadoRouteImport } from './routes/lacado'
+import { Route as HistorialRouteImport } from './routes/historial'
+import { Route as ExtrasRouteImport } from './routes/extras'
+import { Route as DestinatariosRouteImport } from './routes/destinatarios'
+import { Route as AnodizadoRouteImport } from './routes/anodizado'
 import { Route as IndexRouteImport } from './routes/index'
 
+const ResumenRoute = ResumenRouteImport.update({
+  id: '/resumen',
+  path: '/resumen',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LacadoRoute = LacadoRouteImport.update({
+  id: '/lacado',
+  path: '/lacado',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HistorialRoute = HistorialRouteImport.update({
+  id: '/historial',
+  path: '/historial',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExtrasRoute = ExtrasRouteImport.update({
+  id: '/extras',
+  path: '/extras',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DestinatariosRoute = DestinatariosRouteImport.update({
+  id: '/destinatarios',
+  path: '/destinatarios',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnodizadoRoute = AnodizadoRouteImport.update({
+  id: '/anodizado',
+  path: '/anodizado',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -19,28 +61,130 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/anodizado': typeof AnodizadoRoute
+  '/destinatarios': typeof DestinatariosRoute
+  '/extras': typeof ExtrasRoute
+  '/historial': typeof HistorialRoute
+  '/lacado': typeof LacadoRoute
+  '/login': typeof LoginRoute
+  '/resumen': typeof ResumenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/anodizado': typeof AnodizadoRoute
+  '/destinatarios': typeof DestinatariosRoute
+  '/extras': typeof ExtrasRoute
+  '/historial': typeof HistorialRoute
+  '/lacado': typeof LacadoRoute
+  '/login': typeof LoginRoute
+  '/resumen': typeof ResumenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/anodizado': typeof AnodizadoRoute
+  '/destinatarios': typeof DestinatariosRoute
+  '/extras': typeof ExtrasRoute
+  '/historial': typeof HistorialRoute
+  '/lacado': typeof LacadoRoute
+  '/login': typeof LoginRoute
+  '/resumen': typeof ResumenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/anodizado'
+    | '/destinatarios'
+    | '/extras'
+    | '/historial'
+    | '/lacado'
+    | '/login'
+    | '/resumen'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/anodizado'
+    | '/destinatarios'
+    | '/extras'
+    | '/historial'
+    | '/lacado'
+    | '/login'
+    | '/resumen'
+  id:
+    | '__root__'
+    | '/'
+    | '/anodizado'
+    | '/destinatarios'
+    | '/extras'
+    | '/historial'
+    | '/lacado'
+    | '/login'
+    | '/resumen'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AnodizadoRoute: typeof AnodizadoRoute
+  DestinatariosRoute: typeof DestinatariosRoute
+  ExtrasRoute: typeof ExtrasRoute
+  HistorialRoute: typeof HistorialRoute
+  LacadoRoute: typeof LacadoRoute
+  LoginRoute: typeof LoginRoute
+  ResumenRoute: typeof ResumenRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/resumen': {
+      id: '/resumen'
+      path: '/resumen'
+      fullPath: '/resumen'
+      preLoaderRoute: typeof ResumenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lacado': {
+      id: '/lacado'
+      path: '/lacado'
+      fullPath: '/lacado'
+      preLoaderRoute: typeof LacadoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/historial': {
+      id: '/historial'
+      path: '/historial'
+      fullPath: '/historial'
+      preLoaderRoute: typeof HistorialRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/extras': {
+      id: '/extras'
+      path: '/extras'
+      fullPath: '/extras'
+      preLoaderRoute: typeof ExtrasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/destinatarios': {
+      id: '/destinatarios'
+      path: '/destinatarios'
+      fullPath: '/destinatarios'
+      preLoaderRoute: typeof DestinatariosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/anodizado': {
+      id: '/anodizado'
+      path: '/anodizado'
+      fullPath: '/anodizado'
+      preLoaderRoute: typeof AnodizadoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -53,6 +197,13 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AnodizadoRoute: AnodizadoRoute,
+  DestinatariosRoute: DestinatariosRoute,
+  ExtrasRoute: ExtrasRoute,
+  HistorialRoute: HistorialRoute,
+  LacadoRoute: LacadoRoute,
+  LoginRoute: LoginRoute,
+  ResumenRoute: ResumenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
