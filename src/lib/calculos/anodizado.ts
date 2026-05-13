@@ -44,7 +44,6 @@ export const anodizado: SectionDef = {
       inputs: [
         { key: "flash_a", label: "A · HCl 1M sin KF", unit: "ml", default: 0 },
         { key: "flash_b", label: "B · HCl 1M con KF", unit: "ml", default: 0 },
-        { key: "flash_vol", label: "Volumen muestra", unit: "ml", default: 10 },
       ],
       results: [
         {
@@ -55,7 +54,7 @@ export const anodizado: SectionDef = {
           min: 50,
           max: 70,
           decimals: 1,
-          compute: (i) => (i.flash_vol > 0 ? (i.flash_a * 40) / i.flash_vol : NaN),
+          compute: (i) => i.flash_a * 20 - i.flash_b * 6.7,
         },
         {
           key: "flash_al",
@@ -65,7 +64,7 @@ export const anodizado: SectionDef = {
           min: 0,
           max: 60,
           decimals: 1,
-          compute: (i) => (i.flash_a - i.flash_b) * 9,
+          compute: (i) => (i.flash_b * 13.6) / 3.03,
         },
       ],
     },
@@ -75,7 +74,6 @@ export const anodizado: SectionDef = {
       inputs: [
         { key: "sv_a", label: "A · HCl 1M sin KF", unit: "ml", default: 0 },
         { key: "sv_b", label: "B · HCl 1M con KF", unit: "ml", default: 0 },
-        { key: "sv_vol", label: "Volumen muestra", unit: "ml", default: 10 },
       ],
       results: [
         {
@@ -86,7 +84,7 @@ export const anodizado: SectionDef = {
           min: 70,
           max: 110,
           decimals: 1,
-          compute: (i) => (i.sv_vol > 0 ? (i.sv_a * 40) / i.sv_vol : NaN),
+          compute: (i) => i.sv_a * 20 - i.sv_b * 6.7,
         },
         {
           key: "sv_al",
@@ -96,7 +94,7 @@ export const anodizado: SectionDef = {
           min: 90,
           max: 200,
           decimals: 1,
-          compute: (i) => (i.sv_a - i.sv_b) * 9,
+          compute: (i) => (i.sv_b * 13.6) / 3.03,
         },
         {
           key: "sv_ratio",
@@ -106,8 +104,8 @@ export const anodizado: SectionDef = {
           max: 1,
           decimals: 2,
           compute: (i) => {
-            const sosa = i.sv_vol > 0 ? (i.sv_a * 40) / i.sv_vol : NaN;
-            const al = (i.sv_a - i.sv_b) * 9;
+            const sosa = i.sv_a * 20 - i.sv_b * 6.7;
+            const al = (i.sv_b * 13.6) / 3.03;
             return al > 0 ? sosa / al : NaN;
           },
         },
@@ -240,7 +238,7 @@ export const anodizado: SectionDef = {
           rangeLabel: "≥ 200 g/L",
           min: 200,
           decimals: 1,
-          compute: (i) => i.an_a * 0.245 * 10,
+          compute: (i) => (i.an_a / 4) * 98,
         },
         {
           key: "an_sulf_libre",
@@ -250,7 +248,7 @@ export const anodizado: SectionDef = {
           min: 185,
           max: 200,
           decimals: 1,
-          compute: (i) => i.an_b * 0.245 * 10,
+          compute: (i) => (i.an_b / 4) * 98,
         },
         {
           key: "an_al",
@@ -259,7 +257,11 @@ export const anodizado: SectionDef = {
           rangeLabel: "máx. 14 g/L",
           max: 14,
           decimals: 2,
-          compute: (i) => (i.an_a * 0.245 - i.an_b * 0.245) * 1.8 * 10,
+          compute: (i) => {
+            const D = ((i.an_a / 4) * 9.8) / 10;
+            const R = ((i.an_b / 4) * 9.8) / 10;
+            return (D - R) * 18;
+          },
         },
       ],
     },
@@ -289,19 +291,26 @@ export const anodizado: SectionDef = {
       title: "Color (bronce/negro/acero)",
       inputs: [
         { key: "co_a", label: "A · Tiosulfato Sódico 0,1N", unit: "ml", default: 0 },
-        { key: "co_v_yodo", label: "Volumen solución de yodo", unit: "ml", default: 50 },
-        { key: "co_v_naoh", label: "Volumen NaOH 1N", unit: "ml", default: 0 },
+        { key: "co_v_yodo", label: "C · Volumen solución de yodo", unit: "ml", default: 50 },
+        { key: "co_v_naoh", label: "B · Volumen NaOH 1N", unit: "ml", default: 0 },
       ],
       results: [
         {
           key: "co_estano",
-          label: "Estaño (producto)",
+          label: "Estaño",
+          unit: "g/L",
+          decimals: 3,
+          compute: (i) => (i.co_v_yodo - i.co_a) * 0.2374,
+        },
+        {
+          key: "co_producto",
+          label: "Concentración producto",
           unit: "g/L",
           rangeLabel: "15 – 18 g/L",
           min: 15,
           max: 18,
           decimals: 2,
-          compute: (i) => (i.co_v_yodo - i.co_a) * 0.2374,
+          compute: (i) => (i.co_v_yodo - i.co_a) * 0.2374 * 1.6,
         },
         {
           key: "co_acido",
@@ -316,32 +325,11 @@ export const anodizado: SectionDef = {
       ],
     },
     {
-      key: "sellado",
-      title: "Sellado en Frío",
-      inputs: [
-        { key: "sf_v", label: "Volumen EDTA 0,1M", unit: "ml", default: 0 },
-        { key: "sf_ph", label: "pH", unit: "pH", default: 0 },
-      ],
-      results: [
-        {
-          key: "sf_prod",
-          label: "Producto",
-          unit: "g/L",
-          rangeLabel: "6 – 8 g/L",
-          min: 6,
-          max: 8,
-          decimals: 2,
-          compute: (i) => i.sf_v * 0.7,
-        },
-        { key: "sf_ph_r", label: "pH", unit: "pH", decimals: 2, compute: (i) => i.sf_ph },
-      ],
-    },
-    {
       key: "oro",
       title: "Cuba de Oro (lunes/jueves)",
       inputs: [
-        { key: "oro_v", label: "Volumen baño valorado", unit: "ml", default: 1 },
-        { key: "oro_naoh", label: "Volumen NaOH 1N", unit: "ml", default: 0 },
+        { key: "oro_v", label: "A · Volumen baño a valorar", unit: "ml", default: 1 },
+        { key: "oro_naoh", label: "B · Volumen NaOH 1N", unit: "ml", default: 0 },
       ],
       results: [
         {
@@ -364,6 +352,27 @@ export const anodizado: SectionDef = {
           decimals: 2,
           compute: (i) => i.oro_naoh * 0.98,
         },
+      ],
+    },
+    {
+      key: "sellado",
+      title: "Sellado en Frío",
+      inputs: [
+        { key: "sf_v", label: "A · Volumen EDTA 0,1M", unit: "ml", default: 0 },
+        { key: "sf_ph", label: "pH", unit: "pH", default: 0 },
+      ],
+      results: [
+        {
+          key: "sf_prod",
+          label: "Producto",
+          unit: "g/L",
+          rangeLabel: "6 – 8 g/L",
+          min: 6,
+          max: 8,
+          decimals: 2,
+          compute: (i) => i.sf_v * 0.7,
+        },
+        { key: "sf_ph_r", label: "pH", unit: "pH", decimals: 2, compute: (i) => i.sf_ph },
       ],
     },
   ],
