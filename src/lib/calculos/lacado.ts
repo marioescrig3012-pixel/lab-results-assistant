@@ -1,5 +1,9 @@
 import type { SectionDef } from "./types";
 
+// Recta de calibración Zr (regresión lineal de los patrones 0/5/15 ppm → 0/524/885 mAbs)
+// y = 55.729·x + 98.143  →  x = (Abs − 98.143) / 55.729
+const zrFromAbs = (abs: number) => (abs - 98.143) / 55.729;
+
 export const lacado: SectionDef = {
   key: "lacado",
   title: "Lacado",
@@ -24,9 +28,7 @@ export const lacado: SectionDef = {
           key: "cond_nocromico_r",
           label: "Conductividad No Crómico",
           unit: "µS",
-          rangeLabel: "≈ 500 µS verano · 1000 µS invierno",
-          min: 500,
-          max: 1000,
+          rangeLabel: "≈ 500 µS verano · 1000 µS invierno (informativo)",
           compute: (i) => i.cond_nocromico,
         },
       ],
@@ -47,7 +49,7 @@ export const lacado: SectionDef = {
           min: 0.5,
           max: 1.5,
           decimals: 3,
-          compute: (i) => (i.des1_naoh * 0.4) / 3,
+          compute: (i) => i.des1_naoh / 3,
         },
         { key: "des1_temp_r", label: "Temperatura D1", unit: "ºC", compute: (i) => i.des1_temp },
       ],
@@ -68,7 +70,7 @@ export const lacado: SectionDef = {
           min: 0.5,
           max: 1.5,
           decimals: 3,
-          compute: (i) => (i.des2_naoh * 0.4) / 3,
+          compute: (i) => i.des2_naoh / 3,
         },
         { key: "des2_temp_r", label: "Temperatura D2", unit: "ºC", compute: (i) => i.des2_temp },
       ],
@@ -121,7 +123,7 @@ export const lacado: SectionDef = {
           rangeLabel: "mínimo 1 g/m²",
           min: 1,
           decimals: 3,
-          compute: (i) => (i.sup > 0 ? (i.p_ini - i.p_fin) / i.sup : NaN),
+          compute: (i) => (i.sup > 0 ? ((i.p_ini - i.p_fin) / i.sup) * 1000 : NaN),
         },
       ],
     },
@@ -130,6 +132,7 @@ export const lacado: SectionDef = {
       title: "Zirconio (sobre chapa Sopena)",
       inputs: [
         { key: "abs", label: "Lectura absorbancia", unit: "mAbs", default: 0 },
+        { key: "zr_sup", label: "Superficie chapa", unit: "m²", default: 0.018, step: 0.0001 },
       ],
       results: [
         {
@@ -137,7 +140,7 @@ export const lacado: SectionDef = {
           label: "[Zr]",
           unit: "mg/L",
           decimals: 2,
-          compute: (i) => (i.abs - 98.143) / 55.729,
+          compute: (i) => zrFromAbs(i.abs),
         },
         {
           key: "zr_pc",
@@ -147,7 +150,7 @@ export const lacado: SectionDef = {
           min: 0.5,
           max: 15,
           decimals: 2,
-          compute: (i) => (((i.abs - 98.143) / 55.729) * (500 / 180)) / 3,
+          compute: (i) => zrFromAbs(i.abs) * i.zr_sup,
         },
       ],
     },
