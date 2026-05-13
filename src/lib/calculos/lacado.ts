@@ -123,7 +123,7 @@ export const lacado: SectionDef = {
           rangeLabel: "mínimo 1 g/m²",
           min: 1,
           decimals: 3,
-          compute: (i) => (i.sup > 0 ? ((i.p_ini - i.p_fin) / i.sup) * 1000 : NaN),
+          compute: (i) => (i.sup > 0 ? (i.p_ini - i.p_fin) / i.sup : NaN),
         },
       ],
     },
