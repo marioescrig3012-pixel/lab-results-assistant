@@ -113,7 +113,7 @@ export const anodizado: SectionDef = {
     },
     {
       key: "satinado_nueva",
-      title: "Satinado Nueva (Alufinish — lunes/jueves)",
+      title: "SOSA MATE ALUFINISH",
       inputs: [
         { key: "sn_n", label: "N · H₂SO₄ 1N (sosa)", unit: "ml", default: 0 },
         { key: "sn_a", label: "A · H₂SO₄ 1N (Al)", unit: "ml", default: 0 },
