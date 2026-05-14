@@ -13,6 +13,12 @@ import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { Save, Send, AlertTriangle, CheckCircle2, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
+import emailjs from "@emailjs/browser";
+import type { SectionKey } from "@/lib/calculos";
+
+const EMAILJS_SERVICE_ID = "service_hjdqazw";
+const EMAILJS_TEMPLATE_ID = "template_kx4f3sg";
+const EMAILJS_PUBLIC_KEY = "5oKqkNZmWPC3L50eM";
 
 export const Route = createFileRoute("/resumen")({
   component: () => (
@@ -41,8 +47,17 @@ function ResumenPage() {
     [state.inputs]
   );
 
-  const cuerpo = useMemo(() => emailBody(resumenes, state.observaciones), [resumenes, state.observaciones]);
   const seccionesActivas = resumenes.filter((r) => r.hasInputs).map((r) => r.key);
+
+  // Build email body per section
+  const emailsPorSeccion = useMemo(() => {
+    const map = new Map<SectionKey, string>();
+    for (const r of resumenes) {
+      if (!r.hasInputs) continue;
+      map.set(r.key, emailBody([r], state.observaciones[r.key] ?? ""));
+    }
+    return map;
+  }, [resumenes, state.observaciones]);
 
   useEffect(() => {
     supabase
@@ -53,11 +68,10 @@ function ResumenPage() {
       .then(({ data }) => {
         const list = (data ?? []) as Destinatario[];
         setDestinatarios(list);
-        // Pre-select destinatarios that match active secciones
         setSeleccionados(
           new Set(
             list
-              .filter((d) => d.secciones.some((s) => seccionesActivas.includes(s as never)))
+              .filter((d) => d.secciones.some((s) => seccionesActivas.includes(s as SectionKey)))
               .map((d) => d.id)
           )
         );
@@ -91,7 +105,7 @@ function ResumenPage() {
           seccion: r.key,
           inputs: state.inputs[r.key],
           resultados: Object.fromEntries(r.items.map((it) => [it.label, it.value])),
-          observaciones: state.observaciones || null,
+          observaciones: state.observaciones[r.key] || null,
           autor_id: user.id,
           autor_email: user.email,
           enviado_a: enviados.length > 0 ? enviados : null,
@@ -99,19 +113,64 @@ function ResumenPage() {
       const { error } = await supabase.from("analiticas").insert(rows);
       if (error) throw error;
       toast.success(`Guardadas ${rows.length} analítica(s)`);
-      reset();
+      return true;
     } catch (e) {
       toast.error((e as Error).message);
+      return false;
     } finally {
       setBusy(false);
     }
   };
 
   const enviarEmail = async () => {
-    toast.info(
-      "Activa el envío de email configurando un dominio en Lovable Cloud → Emails. Cuando esté listo, dímelo y conecto el envío.",
-      { duration: 7000 }
-    );
+    if (seccionesActivas.length === 0) {
+      toast.error("No hay datos para enviar");
+      return;
+    }
+    if (seleccionados.size === 0) {
+      toast.error("Selecciona al menos un destinatario");
+      return;
+    }
+    setBusy(true);
+    try {
+      const ok = await guardar();
+      if (!ok) return;
+
+      let totalEnviados = 0;
+      for (const r of resumenes) {
+        if (!r.hasInputs) continue;
+        // Recipients matching this section
+        const dests = destinatarios.filter(
+          (d) => seleccionados.has(d.id) && d.secciones.includes(r.key)
+        );
+        if (dests.length === 0) continue;
+        const cuerpo = emailsPorSeccion.get(r.key) ?? "";
+        const asunto = `Analítica ${r.title} · ${new Date().toLocaleDateString("es-ES")}`;
+
+        for (const d of dests) {
+          await emailjs.send(
+            EMAILJS_SERVICE_ID,
+            EMAILJS_TEMPLATE_ID,
+            {
+              to_email: d.email,
+              to_name: d.nombre ?? d.email,
+              subject: asunto,
+              section: r.title,
+              message: cuerpo,
+              from_name: user?.email ?? "Lab",
+            },
+            { publicKey: EMAILJS_PUBLIC_KEY }
+          );
+          totalEnviados++;
+        }
+      }
+      toast.success(`Enviados ${totalEnviados} email(s)`);
+      reset();
+    } catch (e) {
+      toast.error("Error enviando email: " + (e as Error).message);
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -120,7 +179,7 @@ function ResumenPage() {
         <div>
           <h2 className="text-2xl font-semibold tracking-tight">Resumen y envío</h2>
           <p className="text-sm text-muted-foreground">
-            Revisa los resultados, añade observaciones y guarda en el histórico.
+            Revisa los resultados, añade observaciones por sección y envía por email.
           </p>
         </div>
         <div className="flex gap-2">
@@ -185,24 +244,29 @@ function ResumenPage() {
                 </tbody>
               </table>
             </div>
+
+            <div className="mt-4">
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                Observaciones de {r.title}
+              </label>
+              <Textarea
+                rows={3}
+                placeholder={`Notas o incidencias específicas de ${r.title}…`}
+                value={state.observaciones[r.key] ?? ""}
+                onChange={(e) => setObservaciones(r.key, e.target.value)}
+              />
+            </div>
           </Card>
         ) : null
       )}
 
       <Card className="p-5">
-        <h3 className="mb-3 text-base font-semibold tracking-tight">Observaciones</h3>
-        <Textarea
-          rows={5}
-          placeholder="Notas, incidencias o contexto que se incluirá en el email…"
-          value={state.observaciones}
-          onChange={(e) => setObservaciones(e.target.value)}
-        />
-      </Card>
-
-      <Card className="p-5">
         <h3 className="mb-3 flex items-center gap-2 text-base font-semibold tracking-tight">
-          <Mail className="h-4 w-4" /> Destinatarios del email
+          <Mail className="h-4 w-4" /> Destinatarios
         </h3>
+        <p className="mb-3 text-xs text-muted-foreground">
+          Cada destinatario recibirá un email separado por cada sección a la que esté suscrito.
+        </p>
         {destinatarios.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             No hay destinatarios. Añádelos en Configuración → Destinatarios.
@@ -231,12 +295,19 @@ function ResumenPage() {
         )}
       </Card>
 
-      <Card className="p-5">
-        <h3 className="mb-3 text-base font-semibold tracking-tight">Vista previa del email</h3>
-        <pre className="max-h-96 overflow-auto whitespace-pre-wrap rounded-md bg-muted p-4 font-mono text-xs">
-          {cuerpo}
-        </pre>
-      </Card>
+      {Array.from(emailsPorSeccion.entries()).map(([key, body]) => {
+        const r = resumenes.find((x) => x.key === key)!;
+        return (
+          <Card key={key} className="p-5">
+            <h3 className="mb-3 text-base font-semibold tracking-tight">
+              Vista previa email · {r.title}
+            </h3>
+            <pre className="max-h-80 overflow-auto whitespace-pre-wrap rounded-md bg-muted p-4 font-mono text-xs">
+              {body}
+            </pre>
+          </Card>
+        );
+      })}
     </div>
   );
 }
