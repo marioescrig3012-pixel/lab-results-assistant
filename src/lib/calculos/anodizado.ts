@@ -40,7 +40,7 @@ export const anodizado: SectionDef = {
     },
     {
       key: "flash",
-      title: "Cuba Flash (Sosa)",
+      title: "SOSA FLASH",
       inputs: [
         { key: "flash_a", label: "A · HCl 1M sin KF", unit: "ml", default: 0 },
         { key: "flash_b", label: "B · HCl 1M con KF", unit: "ml", default: 0 },
