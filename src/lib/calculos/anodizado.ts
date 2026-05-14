@@ -70,7 +70,7 @@ export const anodizado: SectionDef = {
     },
     {
       key: "satinado_vieja",
-      title: "Satinado Vieja",
+      title: "SOSA MATE HENKEL",
       inputs: [
         { key: "sv_a", label: "A · HCl 1M sin KF", unit: "ml", default: 0 },
         { key: "sv_b", label: "B · HCl 1M con KF", unit: "ml", default: 0 },
