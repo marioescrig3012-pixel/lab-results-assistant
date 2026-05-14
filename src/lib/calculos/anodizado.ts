@@ -227,9 +227,17 @@ export const anodizado: SectionDef = {
       key: "anod",
       title: "Cuba de Anodizado",
       inputs: [
+        { key: "an_bano", label: "Nº Baño", default: 0 },
         { key: "an_a", label: "A · NaOH 1M sin KF", unit: "ml", default: 0 },
         { key: "an_b", label: "B · NaOH 1M con KF", unit: "ml", default: 0 },
       ],
+      results: [
+        {
+          key: "an_bano_r",
+          label: "Nº Baño",
+          decimals: 0,
+          compute: (i) => i.an_bano,
+        },
       results: [
         {
           key: "an_sulf_total",
