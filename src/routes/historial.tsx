@@ -334,6 +334,253 @@ function SectionDayBlock({ seccion, rows }: { seccion: SectionKey; rows: Row[] }
   );
 }
 
+// ============== Excel export following user's template structure ==============
+
+type ColSpec = {
+  group: string;
+  header: string;
+  /** value getter from a row */
+  get: (r: Row) => number | string | null;
+  /** numeric range for warn coloring */
+  min?: number;
+  max?: number;
+  /** number format */
+  numFmt?: string;
+  width?: number;
+};
+
+const FILL_HEADER_GROUP = "FF1F2937";
+const FILL_HEADER_FIELD_INPUT = "FFFFF3B0"; // amarillo
+const FILL_HEADER_FIELD_RESULT = "FFDBEAFE"; // azul claro
+const FILL_DATA_INPUT = "FFFFFBEB";
+const FILL_WARN = "FFFECACA";
+const FILL_OK = "FFECFDF5";
+
+// --- LACADO columns (matches user's Excel template) ---
+const LACADO_COLS: ColSpec[] = [
+  { group: "DESENGRASE 1", header: "Desengrase 1 (mg/L NaOH)", get: (r) => r.inputs.des1_naoh ?? null, numFmt: "0.00", width: 18 },
+  { group: "DESENGRASE 1", header: "CONCENTRACION %", get: (r) => r.resultados["Concentración Desengrase 1"] ?? null, min: 0.5, max: 1.5, numFmt: "0.000", width: 16 },
+  { group: "DESENGRASE 1", header: "TEMPERATURA ºC", get: (r) => r.inputs.des1_temp ?? null, numFmt: "0.0", width: 14 },
+  { group: "DESENGRASE 2", header: "Desengrase 2 (mg/L NaOH)", get: (r) => r.inputs.des2_naoh ?? null, numFmt: "0.00", width: 18 },
+  { group: "DESENGRASE 2", header: "CONCENTRACION %", get: (r) => r.resultados["Concentración Desengrase 2"] ?? null, min: 0.5, max: 1.5, numFmt: "0.000", width: 16 },
+  { group: "DESENGRASE 2", header: "TEMPERATURA ºC", get: (r) => r.inputs.des2_temp ?? null, numFmt: "0.0", width: 14 },
+  { group: "NO CROMICO", header: "Tª", get: (r) => r.inputs.nc_temp ?? null, numFmt: "0.0", width: 10 },
+  { group: "NO CROMICO", header: "pH", get: (r) => r.resultados["pH"] ?? r.inputs.nc_ph ?? null, min: 2.2, max: 3.0, numFmt: "0.00", width: 10 },
+  { group: "NO CROMICO", header: "CONCENTRACIÓN ptos", get: (r) => r.resultados["Concentración No Crómico"] ?? null, min: 1.5, max: 4.2, numFmt: "0.00", width: 18 },
+  { group: "AGUA LAVADO", header: "CONDUCTIVIDAD µS/cm", get: (r) => r.resultados["Agua desmineralizada"] ?? r.inputs.agua_desmi ?? null, max: 30, numFmt: "0.0", width: 20 },
+  { group: "TASA DE ATAQUE", header: "PESO INICIAL (g)", get: (r) => r.inputs.p_ini ?? null, numFmt: "0.0000", width: 16 },
+  { group: "TASA DE ATAQUE", header: "PESO FINAL (g)", get: (r) => r.inputs.p_fin ?? null, numFmt: "0.0000", width: 16 },
+  { group: "TASA DE ATAQUE", header: "g/m²", get: (r) => r.resultados["Tasa de ataque"] ?? null, min: 1, numFmt: "0.000", width: 12 },
+  { group: "ZIRCONIO", header: "Absorbancia (mAbs)", get: (r) => r.inputs.abs ?? null, numFmt: "0.00", width: 18 },
+  { group: "ZIRCONIO", header: "Zr (mg/L)", get: (r) => r.resultados["[Zr]"] ?? null, numFmt: "0.00", width: 12 },
+  { group: "ZIRCONIO", header: "PC (mg/m²)", get: (r) => r.resultados["PC"] ?? null, min: 0.5, max: 15, numFmt: "0.00", width: 14 },
+];
+
+// --- ANODIZADO columns (matches user's Excel template) ---
+const ANODIZADO_COLS: ColSpec[] = [
+  { group: "DESENGRASE 1", header: "Concentración %", get: (r) => r.resultados["Concentración Desengrase 1"] ?? null, min: 2, max: 4, numFmt: "0.00", width: 16 },
+  { group: "DESENGRASE 2", header: "Concentración %", get: (r) => r.resultados["Concentración Desengrase 2"] ?? null, min: 2, max: 4, numFmt: "0.00", width: 16 },
+  { group: "SOSA MATE HENKEL", header: "Sosa (g/L) (70-110)", get: (r) => r.resultados["Sosa"] && r.inputs.sv_a !== undefined ? (r.inputs.sv_a * 20 - r.inputs.sv_b * 6.7) : null, min: 70, max: 110, numFmt: "0.0", width: 16 },
+  { group: "SOSA MATE HENKEL", header: "Aluminio (g/L) (90-200)", get: (r) => r.inputs.sv_b !== undefined ? (r.inputs.sv_b * 13.6) / 3.03 : null, min: 90, max: 200, numFmt: "0.0", width: 18 },
+  { group: "SOSA MATE HENKEL", header: "Relación sosa/Al", get: (r) => {
+      if (r.inputs.sv_a === undefined) return null;
+      const s = r.inputs.sv_a * 20 - r.inputs.sv_b * 6.7;
+      const al = (r.inputs.sv_b * 13.6) / 3.03;
+      return al > 0 ? s / al : null;
+    }, min: 0.8, max: 1, numFmt: "0.00", width: 14 },
+  { group: "SOSA MATE ALUFINISH", header: "Hidróxido sódico (g/L)", get: (r) => r.resultados["Hidróxido sódico"] ?? null, min: 50, max: 80, numFmt: "0.0", width: 18 },
+  { group: "SOSA MATE ALUFINISH", header: "Aluminio (g/L)", get: (r) => r.resultados["Aluminio"] ?? null, numFmt: "0.00", width: 14 },
+  { group: "SOSA MATE ALUFINISH", header: "Aditivo (ptos)", get: (r) => r.resultados["Aditivo"] ?? null, min: 22, numFmt: "0.0", width: 14 },
+  { group: "SOSA FLASH", header: "Sosa (g/L) (50-70)", get: (r) => r.inputs.flash_a !== undefined ? r.inputs.flash_a * 20 - r.inputs.flash_b * 6.7 : null, min: 50, max: 70, numFmt: "0.0", width: 16 },
+  { group: "SOSA FLASH", header: "Aluminio (g/L)", get: (r) => r.inputs.flash_b !== undefined ? (r.inputs.flash_b * 13.6) / 3.03 : null, max: 60, numFmt: "0.0", width: 14 },
+  { group: "NEUTRALIZADO 1", header: "Conc. g/L", get: (r) => r.resultados["Producto"] ?? null, min: 5, max: 15, numFmt: "0.00", width: 12 },
+  { group: "NEUTRALIZADO 1", header: "Ác. sulfúrico g/L", get: (r) => r.resultados["Ácido"] ?? null, min: 80, max: 120, numFmt: "0.0", width: 16 },
+  { group: "NEUTRALIZADO 2", header: "Conc. g/L", get: (r) => r.resultados["Producto"] ?? null, min: 5, max: 15, numFmt: "0.00", width: 12 },
+  { group: "NEUTRALIZADO 2", header: "Ác. sulfúrico g/L", get: (r) => r.resultados["Ácido"] ?? null, min: 80, max: 120, numFmt: "0.0", width: 16 },
+  { group: "ANODIZADO", header: "Nº Baño", get: (r) => r.inputs.an_bano ?? null, numFmt: "0", width: 10 },
+  { group: "ANODIZADO", header: "Sulf. total g/L", get: (r) => r.resultados["Sulfúrico total"] ?? null, min: 200, numFmt: "0.0", width: 14 },
+  { group: "ANODIZADO", header: "Sulf. libre g/L", get: (r) => r.resultados["Sulfúrico libre"] ?? null, min: 185, max: 200, numFmt: "0.0", width: 14 },
+  { group: "ANODIZADO", header: "Aluminio g/L", get: (r) => r.resultados["Aluminio"] ?? null, max: 14, numFmt: "0.00", width: 14 },
+  { group: "COLOR", header: "Estaño/Bronce conc. (g/L)", get: (r) => r.resultados["Concentración producto"] ?? null, min: 15, max: 18, numFmt: "0.00", width: 18 },
+  { group: "COLOR", header: "Ác. sulfúrico (g/L)", get: (r) => r.resultados["Ácido sulfúrico"] ?? null, min: 19, max: 20, numFmt: "0.00", width: 16 },
+  { group: "ORO", header: "Conc. (g/L)", get: (r) => r.resultados["Producto"] ?? null, min: 8, max: 15, numFmt: "0.00", width: 12 },
+  { group: "ORO", header: "Ác. sulfúrico (g/L)", get: (r) => r.resultados["Ácido sulfúrico"] ?? null, min: 25, max: 28, numFmt: "0.00", width: 16 },
+  { group: "SELLADO EN FRÍO", header: "pH", get: (r) => r.resultados["pH"] ?? r.inputs.sf_ph ?? null, numFmt: "0.00", width: 10 },
+  { group: "SELLADO EN FRÍO", header: "Conc. g/L", get: (r) => r.resultados["Producto"] ?? null, min: 6, max: 8, numFmt: "0.00", width: 12 },
+  { group: "CURADO", header: "Tª", get: (r) => r.inputs.cu_temp ?? null, numFmt: "0.0", width: 10 },
+  { group: "CURADO", header: "Conductividad µS", get: (r) => r.inputs.cu_cond ?? null, max: 100, numFmt: "0.0", width: 16 },
+  { group: "CURADO", header: "pH", get: (r) => r.inputs.cu_ph ?? null, numFmt: "0.00", width: 10 },
+];
+
+// --- EXTRAS columns ---
+const EXTRAS_COLS: ColSpec[] = [
+  { group: "PÉRDIDA DE PESO", header: "Área (dm²)", get: (r) => r.inputs.pp_area ?? null, numFmt: "0.0000", width: 12 },
+  { group: "PÉRDIDA DE PESO", header: "Peso inicial (mg)", get: (r) => r.inputs.pp_pi ?? null, numFmt: "0.0000", width: 16 },
+  { group: "PÉRDIDA DE PESO", header: "Peso final (mg)", get: (r) => r.inputs.pp_pf ?? null, numFmt: "0.0000", width: 16 },
+  { group: "PÉRDIDA DE PESO", header: "Pérdida (mg/dm²)", max: 30, get: (r) => r.resultados["Pérdida de peso"] ?? null, numFmt: "0.000", width: 16 },
+  { group: "AL DISUELTO LACADO", header: "Vb (ml)", get: (r) => r.inputs.ad_vb ?? null, numFmt: "0.00", width: 10 },
+  { group: "AL DISUELTO LACADO", header: "Va (ml)", get: (r) => r.inputs.ad_va ?? null, numFmt: "0.00", width: 10 },
+  { group: "AL DISUELTO LACADO", header: "Al disuelto (g/L)", max: 2, get: (r) => r.resultados["Aluminio disuelto"] ?? null, numFmt: "0.000", width: 16 },
+  { group: "ZIRCONIO LACADO", header: "Absorbancia (mAbs)", get: (r) => r.inputs.zr_abs ?? null, numFmt: "0.00", width: 18 },
+  { group: "ZIRCONIO LACADO", header: "[Zr] (mg/L)", get: (r) => r.resultados["[Zr]"] ?? null, numFmt: "0.00", width: 12 },
+  { group: "ZIRCONIO LACADO", header: "PC (mg/m²)", min: 0.5, max: 15, get: (r) => r.resultados["PC"] ?? null, numFmt: "0.00", width: 14 },
+];
+
+const SECTION_COLS: Record<SectionKey, ColSpec[]> = {
+  lacado: LACADO_COLS,
+  anodizado: ANODIZADO_COLS,
+  extras: EXTRAS_COLS,
+};
+
+const SECTION_NAMES: Record<SectionKey, string> = {
+  lacado: "LACADO",
+  anodizado: "ANODIZADO",
+  extras: "EXTRAS",
+};
+
+function writeSectionSheet(
+  wb: ExcelJS.Workbook,
+  sk: SectionKey,
+  rows: Row[],
+  desde: string,
+  hasta: string
+) {
+  const cols = SECTION_COLS[sk];
+  const ws = wb.addWorksheet(SECTION_NAMES[sk], {
+    views: [{ state: "frozen", xSplit: 1, ySplit: 4 }],
+  });
+
+  // Title row
+  const totalCols = 2 + cols.length + 1; // FECHA + AUTOR + cols + Observaciones
+  ws.mergeCells(1, 1, 1, totalCols);
+  const t = ws.getCell(1, 1);
+  t.value = `${SECTION_NAMES[sk]} · ${desde} → ${hasta}`;
+  t.font = { bold: true, size: 14, color: { argb: "FFFFFFFF" } };
+  t.fill = { type: "pattern", pattern: "solid", fgColor: { argb: FILL_HEADER_GROUP } };
+  t.alignment = { vertical: "middle", horizontal: "center" };
+  ws.getRow(1).height = 24;
+
+  // Group header row (row 2)
+  ws.mergeCells(2, 1, 3, 1); // FECHA spans rows 2-3
+  ws.getCell(2, 1).value = "FECHA";
+  ws.mergeCells(2, 2, 3, 2); // AUTOR spans rows 2-3
+  ws.getCell(2, 2).value = "AUTOR";
+
+  let col = 3;
+  // Group cells - merge consecutive same-group cols
+  let i = 0;
+  while (i < cols.length) {
+    const g = cols[i].group;
+    let j = i;
+    while (j < cols.length && cols[j].group === g) j++;
+    const span = j - i;
+    if (span > 1) ws.mergeCells(2, col + i, 2, col + j - 1);
+    const c = ws.getCell(2, col + i);
+    c.value = g;
+    c.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 11 };
+    c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: FILL_HEADER_GROUP } };
+    c.alignment = { horizontal: "center", vertical: "middle" };
+    i = j;
+  }
+  // Observaciones group cell
+  ws.mergeCells(2, col + cols.length, 3, col + cols.length);
+  const obsTop = ws.getCell(2, col + cols.length);
+  obsTop.value = "OBSERVACIONES";
+  obsTop.font = { bold: true, color: { argb: "FFFFFFFF" } };
+  obsTop.fill = { type: "pattern", pattern: "solid", fgColor: { argb: FILL_HEADER_GROUP } };
+  obsTop.alignment = { horizontal: "center", vertical: "middle" };
+
+  // Style FECHA / AUTOR header
+  [1, 2].forEach((c2) => {
+    const cc = ws.getCell(2, c2);
+    cc.font = { bold: true, color: { argb: "FFFFFFFF" } };
+    cc.fill = { type: "pattern", pattern: "solid", fgColor: { argb: FILL_HEADER_GROUP } };
+    cc.alignment = { horizontal: "center", vertical: "middle" };
+  });
+
+  // Field header row (row 3)
+  cols.forEach((cc, idx) => {
+    const cell = ws.getCell(3, col + idx);
+    cell.value = cc.header;
+    cell.font = { bold: true, size: 10 };
+    cell.alignment = { wrapText: true, horizontal: "center", vertical: "middle" };
+    cell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: FILL_HEADER_FIELD_RESULT },
+    };
+    cell.border = {
+      top: { style: "thin", color: { argb: "FFCCCCCC" } },
+      bottom: { style: "medium", color: { argb: "FF111827" } },
+    };
+  });
+  ws.getRow(3).height = 38;
+
+  // Data rows starting at row 4
+  const sorted = [...rows].sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
+  let rowIdx = 4;
+  let lastDay = "";
+  for (const r of sorted) {
+    const day = format(new Date(r.fecha), "yyyy-MM-dd");
+    if (day !== lastDay) {
+      // Day separator
+      ws.mergeCells(rowIdx, 1, rowIdx, totalCols);
+      const sep = ws.getCell(rowIdx, 1);
+      sep.value = format(new Date(r.fecha), "EEEE dd/MM/yyyy");
+      sep.font = { bold: true, color: { argb: "FF111827" } };
+      sep.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE0E7FF" } };
+      sep.alignment = { horizontal: "left" };
+      lastDay = day;
+      rowIdx++;
+    }
+
+    const dataRow = ws.getRow(rowIdx);
+    dataRow.getCell(1).value = format(new Date(r.fecha), "dd/MM/yyyy HH:mm");
+    dataRow.getCell(2).value = r.autor_email ?? "";
+    cols.forEach((cc, idx) => {
+      const cell = dataRow.getCell(col + idx);
+      const v = cc.get(r);
+      if (v === null || v === undefined || (typeof v === "number" && !Number.isFinite(v))) {
+        cell.value = null;
+      } else {
+        cell.value = v;
+      }
+      if (cc.numFmt) cell.numFmt = cc.numFmt;
+      // Coloring based on range
+      if (typeof v === "number" && Number.isFinite(v)) {
+        const status = statusFor(v, cc.min, cc.max);
+        if (status === "warn") {
+          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: FILL_WARN } };
+          cell.font = { bold: true, color: { argb: "FF991B1B" } };
+        } else if (status === "ok") {
+          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: FILL_OK } };
+        } else {
+          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: FILL_DATA_INPUT } };
+        }
+      }
+      cell.alignment = { horizontal: "center", vertical: "middle" };
+    });
+    dataRow.getCell(col + cols.length).value = r.observaciones ?? "";
+    dataRow.getCell(col + cols.length).alignment = { wrapText: true, vertical: "top" };
+
+    dataRow.eachCell((cell) => {
+      cell.border = {
+        top: { style: "hair", color: { argb: "FFE5E7EB" } },
+        bottom: { style: "hair", color: { argb: "FFE5E7EB" } },
+        left: { style: "hair", color: { argb: "FFEFEFEF" } },
+        right: { style: "hair", color: { argb: "FFEFEFEF" } },
+      };
+    });
+    rowIdx++;
+  }
+
+  // Column widths
+  ws.getColumn(1).width = 18;
+  ws.getColumn(2).width = 22;
+  cols.forEach((cc, idx) => (ws.getColumn(col + idx).width = cc.width ?? 14));
+  ws.getColumn(col + cols.length).width = 32;
+}
+
 async function exportXlsx(rows: Row[], desde: string, hasta: string) {
   const wb = new ExcelJS.Workbook();
   wb.creator = "Calculadora Analíticas";
@@ -342,194 +589,10 @@ async function exportXlsx(rows: Row[], desde: string, hasta: string) {
   const sectionKeys: SectionKey[] = ["lacado", "anodizado", "extras"];
 
   for (const sk of sectionKeys) {
-    const section = sections[sk];
     const sRows = rows.filter((r) => r.seccion === sk);
     if (sRows.length === 0) continue;
-
-    const ws = wb.addWorksheet(section.title, {
-      views: [{ state: "frozen", xSplit: 2, ySplit: 3 }],
-    });
-
-    const inputs = section.groups.flatMap((g) =>
-      g.inputs.map((i) => ({ ...i, group: g.title }))
-    );
-    const results = section.groups.flatMap((g) =>
-      g.results.map((r) => ({ ...r, group: g.title }))
-    );
-
-    // Title row
-    ws.mergeCells(1, 1, 1, 2 + inputs.length + results.length + 1);
-    const titleCell = ws.getCell(1, 1);
-    titleCell.value = `Analíticas ${section.title} · ${desde} → ${hasta}`;
-    titleCell.font = { bold: true, size: 14, color: { argb: "FFFFFFFF" } };
-    titleCell.fill = {
-      type: "pattern",
-      pattern: "solid",
-      fgColor: { argb: "FF1F2937" },
-    };
-    titleCell.alignment = { vertical: "middle", horizontal: "center" };
-    ws.getRow(1).height = 24;
-
-    // Group header row
-    const groupRow = ws.getRow(2);
-    groupRow.getCell(1).value = "";
-    groupRow.getCell(2).value = "";
-    let col = 3;
-    // Inputs grouped
-    const inputsByGroup = new Map<string, number>();
-    inputs.forEach((i) => inputsByGroup.set(i.group, (inputsByGroup.get(i.group) ?? 0) + 1));
-    for (const [g, count] of inputsByGroup) {
-      ws.mergeCells(2, col, 2, col + count - 1);
-      const c = ws.getCell(2, col);
-      c.value = `Entradas · ${g}`;
-      c.font = { bold: true, color: { argb: "FF000000" } };
-      c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFF3B0" } };
-      c.alignment = { horizontal: "center" };
-      c.border = { bottom: { style: "thin", color: { argb: "FFCCCCCC" } } };
-      col += count;
-    }
-    const resultsByGroup = new Map<string, number>();
-    results.forEach((r) => resultsByGroup.set(r.group, (resultsByGroup.get(r.group) ?? 0) + 1));
-    for (const [g, count] of resultsByGroup) {
-      ws.mergeCells(2, col, 2, col + count - 1);
-      const c = ws.getCell(2, col);
-      c.value = `Resultados · ${g}`;
-      c.font = { bold: true, color: { argb: "FFFFFFFF" } };
-      c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2563EB" } };
-      c.alignment = { horizontal: "center" };
-      col += count;
-    }
-    ws.mergeCells(2, col, 2, col);
-    const obsHeader = ws.getCell(2, col);
-    obsHeader.value = "Observaciones";
-    obsHeader.font = { bold: true };
-    obsHeader.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE5E7EB" } };
-    obsHeader.alignment = { horizontal: "center" };
-
-    // Column header row
-    const headerRow = ws.getRow(3);
-    const headers: string[] = ["Fecha", "Autor"];
-    inputs.forEach((i) => headers.push(`${i.label}${i.unit ? ` (${i.unit})` : ""}`));
-    results.forEach((r) =>
-      headers.push(
-        `${r.label}${r.unit ? ` (${r.unit})` : ""}${r.rangeLabel ? `\n${r.rangeLabel}` : ""}`
-      )
-    );
-    headers.push("Observaciones");
-    headers.forEach((h, idx) => {
-      const c = headerRow.getCell(idx + 1);
-      c.value = h;
-      c.font = { bold: true, size: 10 };
-      c.alignment = { wrapText: true, vertical: "middle", horizontal: "center" };
-      c.border = {
-        top: { style: "thin", color: { argb: "FFCCCCCC" } },
-        bottom: { style: "medium", color: { argb: "FF111827" } },
-      };
-      // tint inputs vs results
-      if (idx >= 2 && idx < 2 + inputs.length) {
-        c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFF8DC" } };
-      } else if (idx >= 2 + inputs.length && idx < 2 + inputs.length + results.length) {
-        c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFDBEAFE" } };
-      } else {
-        c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF3F4F6" } };
-      }
-    });
-    headerRow.height = 36;
-
-    // Data rows sorted oldest to newest
-    const sorted = [...sRows].sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
-    let lastDay = "";
-    for (const r of sorted) {
-      const day = format(new Date(r.fecha), "yyyy-MM-dd");
-      if (day !== lastDay) {
-        // Day separator row
-        const sep = ws.addRow([]);
-        ws.mergeCells(sep.number, 1, sep.number, headers.length);
-        const sc = ws.getCell(sep.number, 1);
-        sc.value = format(new Date(r.fecha), "EEEE dd/MM/yyyy");
-        sc.font = { bold: true, color: { argb: "FF111827" } };
-        sc.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE0E7FF" } };
-        sc.alignment = { horizontal: "left" };
-        lastDay = day;
-      }
-
-      const dataRow = ws.addRow([]);
-      dataRow.getCell(1).value = format(new Date(r.fecha), "dd/MM/yyyy HH:mm");
-      dataRow.getCell(2).value = r.autor_email ?? "";
-      let cIdx = 3;
-      for (const inp of inputs) {
-        const v = r.inputs?.[inp.key];
-        const cell = dataRow.getCell(cIdx);
-        cell.value = Number.isFinite(v) ? Number(v) : null;
-        cell.numFmt = "0.###";
-        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFFBEB" } };
-        cIdx++;
-      }
-      for (const res of results) {
-        const v = r.resultados?.[res.key];
-        const cell = dataRow.getCell(cIdx);
-        cell.value = Number.isFinite(v) ? Number(v) : null;
-        cell.numFmt = `0.${"0".repeat(res.decimals ?? 2)}`;
-        const status = statusFor(v ?? NaN, res.min, res.max);
-        if (status === "warn") {
-          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFECACA" } };
-          cell.font = { bold: true, color: { argb: "FF991B1B" } };
-        } else if (status === "ok") {
-          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFECFDF5" } };
-        }
-        cIdx++;
-      }
-      dataRow.getCell(cIdx).value = r.observaciones ?? "";
-      dataRow.getCell(cIdx).alignment = { wrapText: true, vertical: "top" };
-
-      dataRow.eachCell((cell) => {
-        cell.border = {
-          top: { style: "hair", color: { argb: "FFE5E7EB" } },
-          bottom: { style: "hair", color: { argb: "FFE5E7EB" } },
-          left: { style: "hair", color: { argb: "FFEFEFEF" } },
-          right: { style: "hair", color: { argb: "FFEFEFEF" } },
-        };
-      });
-    }
-
-    // Column widths
-    ws.getColumn(1).width = 18;
-    ws.getColumn(2).width = 22;
-    for (let i = 3; i <= headers.length - 1; i++) ws.getColumn(i).width = 16;
-    ws.getColumn(headers.length).width = 32;
+    writeSectionSheet(wb, sk, sRows, desde, hasta);
   }
-
-  // Summary sheet
-  const summary = wb.addWorksheet("Resumen", { views: [{ state: "frozen", ySplit: 2 }] });
-  summary.mergeCells(1, 1, 1, 4);
-  const st = summary.getCell(1, 1);
-  st.value = `Resumen ${desde} → ${hasta}`;
-  st.font = { bold: true, size: 14, color: { argb: "FFFFFFFF" } };
-  st.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1F2937" } };
-  st.alignment = { horizontal: "center", vertical: "middle" };
-  summary.getRow(1).height = 24;
-  const sh = summary.getRow(2);
-  ["Sección", "Nº analíticas", "Primera", "Última"].forEach((h, i) => {
-    const c = sh.getCell(i + 1);
-    c.value = h;
-    c.font = { bold: true };
-    c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE5E7EB" } };
-  });
-  for (const sk of sectionKeys) {
-    const sRows = rows.filter((r) => r.seccion === sk);
-    if (sRows.length === 0) continue;
-    const sorted = [...sRows].sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
-    summary.addRow([
-      sections[sk].title,
-      sRows.length,
-      format(new Date(sorted[0].fecha), "dd/MM/yyyy HH:mm"),
-      format(new Date(sorted[sorted.length - 1].fecha), "dd/MM/yyyy HH:mm"),
-    ]);
-  }
-  summary.getColumn(1).width = 18;
-  summary.getColumn(2).width = 14;
-  summary.getColumn(3).width = 22;
-  summary.getColumn(4).width = 22;
 
   const buffer = await wb.xlsx.writeBuffer();
   const blob = new Blob([buffer], {
@@ -543,5 +606,5 @@ async function exportXlsx(rows: Row[], desde: string, hasta: string) {
   URL.revokeObjectURL(url);
 }
 
-// keep Download icon import used elsewhere
 void Download;
+
