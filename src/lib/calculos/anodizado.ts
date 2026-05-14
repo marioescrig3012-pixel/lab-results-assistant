@@ -237,8 +237,6 @@ export const anodizado: SectionDef = {
           label: "Nº Baño",
           decimals: 0,
           compute: (i) => i.an_bano,
-        },
-      results: [
         {
           key: "an_sulf_total",
           label: "Sulfúrico total",
