@@ -40,7 +40,7 @@ export const anodizado: SectionDef = {
     },
     {
       key: "flash",
-      title: "Cuba Flash (Sosa)",
+      title: "SOSA FLASH",
       inputs: [
         { key: "flash_a", label: "A · HCl 1M sin KF", unit: "ml", default: 0 },
         { key: "flash_b", label: "B · HCl 1M con KF", unit: "ml", default: 0 },
@@ -70,7 +70,7 @@ export const anodizado: SectionDef = {
     },
     {
       key: "satinado_vieja",
-      title: "Satinado Vieja",
+      title: "SOSA MATE HENKEL",
       inputs: [
         { key: "sv_a", label: "A · HCl 1M sin KF", unit: "ml", default: 0 },
         { key: "sv_b", label: "B · HCl 1M con KF", unit: "ml", default: 0 },
@@ -113,7 +113,7 @@ export const anodizado: SectionDef = {
     },
     {
       key: "satinado_nueva",
-      title: "Satinado Nueva (Alufinish — lunes/jueves)",
+      title: "SOSA MATE ALUFINISH",
       inputs: [
         { key: "sn_n", label: "N · H₂SO₄ 1N (sosa)", unit: "ml", default: 0 },
         { key: "sn_a", label: "A · H₂SO₄ 1N (Al)", unit: "ml", default: 0 },
@@ -227,10 +227,17 @@ export const anodizado: SectionDef = {
       key: "anod",
       title: "Cuba de Anodizado",
       inputs: [
+        { key: "an_bano", label: "Nº Baño", default: 0 },
         { key: "an_a", label: "A · NaOH 1M sin KF", unit: "ml", default: 0 },
         { key: "an_b", label: "B · NaOH 1M con KF", unit: "ml", default: 0 },
       ],
       results: [
+        {
+          key: "an_bano_r",
+          label: "Nº Baño",
+          decimals: 0,
+          compute: (i) => i.an_bano,
+        },
         {
           key: "an_sulf_total",
           label: "Sulfúrico total",
