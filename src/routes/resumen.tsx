@@ -136,13 +136,11 @@ function ResumenPage() {
       const ok = await guardar();
       if (!ok) return;
 
-       emailjs.init(EMAILJS_PUBLIC_KEY);
-       console.log("Destinatarios:", dests);
-      
+      emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+
       let totalEnviados = 0;
       for (const r of resumenes) {
         if (!r.hasInputs) continue;
-        // Recipients matching this section
         const dests = destinatarios.filter(
           (d) => seleccionados.has(d.id) && d.secciones.includes(r.key)
         );
@@ -151,21 +149,29 @@ function ResumenPage() {
         const asunto = `Analítica ${r.title} · ${new Date().toLocaleDateString("es-ES")}`;
 
         for (const d of dests) {
-          await console.log("Enviando a:", d.email, "nombre:", d.nombre);
-          emailjs.send(
-            EMAILJS_SERVICE_ID,
-            EMAILJS_TEMPLATE_ID,
-            {
-              to_email: d.email,
-              to_name: d.nombre ?? d.email,
-              subject: asunto,
-              section: r.title,
-              message: cuerpo,
-              from_name: user?.email ?? "Lab",
-            },
-            { publicKey: EMAILJS_PUBLIC_KEY }
-          );
-          totalEnviados++;
+          try {
+            await emailjs.send(
+              EMAILJS_SERVICE_ID,
+              EMAILJS_TEMPLATE_ID,
+              {
+                to_email: d.email,
+                to_name: d.nombre ?? d.email,
+                subject: asunto,
+                section: r.title,
+                message: cuerpo,
+                from_name: user?.email ?? "Lab",
+              },
+              { publicKey: EMAILJS_PUBLIC_KEY }
+            );
+            totalEnviados++;
+          } catch (err) {
+            console.error("EmailJS error para", d.email, err);
+            const msg =
+              (err as { text?: string; message?: string })?.text ??
+              (err as Error)?.message ??
+              "Error desconocido";
+            toast.error(`No se pudo enviar a ${d.email}: ${msg}`);
+          }
         }
       }
       toast.success(`Enviados ${totalEnviados} email(s)`);
