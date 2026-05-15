@@ -79,7 +79,7 @@ export function emailBody(
         lines.push(`- ${it.groupTitle}:`);
         lastGroup = it.groupTitle;
       }
-      const flag = it.status === "warn" ? " ⚠️" : "";
+      const flag = it.status === "warn" ? " FUERA DE RANGO ⚠️" : "";
       const range = it.rangeLabel ? ` (${it.rangeLabel})` : "";
       lines.push(
         `${it.label}: ${it.formatted}${it.unit ? " " + it.unit : ""}${range}${flag}`
