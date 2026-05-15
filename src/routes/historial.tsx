@@ -445,41 +445,30 @@ const SECTION_NAMES: Record<SectionKey, string> = {
 function writeSectionSheet(
   wb: ExcelJS.Workbook,
   sk: SectionKey,
-  rows: Row[],
-  desde: string,
-  hasta: string
+  rows: Row[]
 ) {
   const cols = SECTION_COLS[sk];
   const ws = wb.addWorksheet(SECTION_NAMES[sk], {
-    views: [{ state: "frozen", xSplit: 1, ySplit: 4 }],
+    views: [{ state: "frozen", xSplit: 1, ySplit: 2 }],
   });
 
-  // Title row
   const totalCols = 2 + cols.length + 1; // FECHA + AUTOR + cols + Observaciones
-  ws.mergeCells(1, 1, 1, totalCols);
-  const t = ws.getCell(1, 1);
-  t.value = `${SECTION_NAMES[sk]} · ${desde} → ${hasta}`;
-  t.font = { bold: true, size: 14, color: { argb: "FFFFFFFF" } };
-  t.fill = { type: "pattern", pattern: "solid", fgColor: { argb: FILL_HEADER_GROUP } };
-  t.alignment = { vertical: "middle", horizontal: "center" };
-  ws.getRow(1).height = 24;
 
-  // Group header row (row 2)
-  ws.mergeCells(2, 1, 3, 1); // FECHA spans rows 2-3
-  ws.getCell(2, 1).value = "FECHA";
-  ws.mergeCells(2, 2, 3, 2); // AUTOR spans rows 2-3
-  ws.getCell(2, 2).value = "AUTOR";
+  // Group header row (row 1)
+  ws.mergeCells(1, 1, 2, 1); // FECHA spans rows 1-2
+  ws.getCell(1, 1).value = "FECHA";
+  ws.mergeCells(1, 2, 2, 2); // AUTOR spans rows 1-2
+  ws.getCell(1, 2).value = "AUTOR";
 
-  let col = 3;
-  // Group cells - merge consecutive same-group cols
+  const col = 3;
   let i = 0;
   while (i < cols.length) {
     const g = cols[i].group;
     let j = i;
     while (j < cols.length && cols[j].group === g) j++;
     const span = j - i;
-    if (span > 1) ws.mergeCells(2, col + i, 2, col + j - 1);
-    const c = ws.getCell(2, col + i);
+    if (span > 1) ws.mergeCells(1, col + i, 1, col + j - 1);
+    const c = ws.getCell(1, col + i);
     c.value = g;
     c.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 11 };
     c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: FILL_HEADER_GROUP } };
@@ -487,8 +476,8 @@ function writeSectionSheet(
     i = j;
   }
   // Observaciones group cell
-  ws.mergeCells(2, col + cols.length, 3, col + cols.length);
-  const obsTop = ws.getCell(2, col + cols.length);
+  ws.mergeCells(1, col + cols.length, 2, col + cols.length);
+  const obsTop = ws.getCell(1, col + cols.length);
   obsTop.value = "OBSERVACIONES";
   obsTop.font = { bold: true, color: { argb: "FFFFFFFF" } };
   obsTop.fill = { type: "pattern", pattern: "solid", fgColor: { argb: FILL_HEADER_GROUP } };
@@ -496,15 +485,15 @@ function writeSectionSheet(
 
   // Style FECHA / AUTOR header
   [1, 2].forEach((c2) => {
-    const cc = ws.getCell(2, c2);
+    const cc = ws.getCell(1, c2);
     cc.font = { bold: true, color: { argb: "FFFFFFFF" } };
     cc.fill = { type: "pattern", pattern: "solid", fgColor: { argb: FILL_HEADER_GROUP } };
     cc.alignment = { horizontal: "center", vertical: "middle" };
   });
 
-  // Field header row (row 3)
+  // Field header row (row 2)
   cols.forEach((cc, idx) => {
-    const cell = ws.getCell(3, col + idx);
+    const cell = ws.getCell(2, col + idx);
     cell.value = cc.header;
     cell.font = { bold: true, size: 10 };
     cell.alignment = { wrapText: true, horizontal: "center", vertical: "middle" };
@@ -518,26 +507,12 @@ function writeSectionSheet(
       bottom: { style: "medium", color: { argb: "FF111827" } },
     };
   });
-  ws.getRow(3).height = 38;
+  ws.getRow(2).height = 38;
 
-  // Data rows starting at row 4
+  // Data rows starting at row 3 (chronological order, no day separators)
   const sorted = [...rows].sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
-  let rowIdx = 4;
-  let lastDay = "";
+  let rowIdx = 3;
   for (const r of sorted) {
-    const day = format(new Date(r.fecha), "yyyy-MM-dd");
-    if (day !== lastDay) {
-      // Day separator
-      ws.mergeCells(rowIdx, 1, rowIdx, totalCols);
-      const sep = ws.getCell(rowIdx, 1);
-      sep.value = format(new Date(r.fecha), "EEEE dd/MM/yyyy");
-      sep.font = { bold: true, color: { argb: "FF111827" } };
-      sep.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE0E7FF" } };
-      sep.alignment = { horizontal: "left" };
-      lastDay = day;
-      rowIdx++;
-    }
-
     const dataRow = ws.getRow(rowIdx);
     dataRow.getCell(1).value = format(new Date(r.fecha), "dd/MM/yyyy HH:mm");
     dataRow.getCell(2).value = r.autor_email ?? "";
@@ -550,7 +525,6 @@ function writeSectionSheet(
         cell.value = v;
       }
       if (cc.numFmt) cell.numFmt = cc.numFmt;
-      // Coloring based on range
       if (typeof v === "number" && Number.isFinite(v)) {
         const status = statusFor(v, cc.min, cc.max);
         if (status === "warn") {
