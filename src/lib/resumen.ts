@@ -76,21 +76,19 @@ export function emailBody(
     for (const it of r.items) {
       if (it.groupTitle !== lastGroup) {
         if (lastGroup !== "") lines.push("");
-        lines.push(`📌 ${it.groupTitle.toUpperCase()}:`);
+        lines.push(`- ${it.groupTitle}:`);
         lastGroup = it.groupTitle;
       }
-      const flag = it.status === "warn" ? " ⚠️ FUERA DE RANGO" : " ✓";
-      const range = it.rangeLabel ? ` (rango: ${it.rangeLabel})` : "";
+      const flag = it.status === "warn" ? " ⚠️" : "";
+      const range = it.rangeLabel ? ` (${it.rangeLabel})` : "";
       lines.push(
-        `   - ${it.label}: ${it.formatted}${it.unit ? " " + it.unit : ""}${range}${flag}`
+        `${it.label}: ${it.formatted}${it.unit ? " " + it.unit : ""}${range}${flag}`
       );
     }
     lines.push("");
-    lines.push("─────────────────────────────");
-    lines.push("");
   }
   if (observaciones.trim()) {
-    lines.push("📝 OBSERVACIONES:");
+    lines.push("Observaciones:");
     lines.push(observaciones.trim());
     lines.push("");
   }
