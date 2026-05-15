@@ -146,7 +146,8 @@ function ResumenPage() {
         );
         if (dests.length === 0) continue;
         const cuerpo = emailsPorSeccion.get(r.key) ?? "";
-        const asunto = `Analítica ${r.title} · ${new Date().toLocaleDateString("es-ES")}`;
+        const fecha = new Date().toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" });
+        const asunto = `ANALITICAS LABORATORIO - ${r.title.toUpperCase()} - ${fecha}`;
 
         for (const d of dests) {
           try {
