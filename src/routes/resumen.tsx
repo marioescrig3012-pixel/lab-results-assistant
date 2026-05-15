@@ -137,7 +137,8 @@ function ResumenPage() {
       if (!ok) return;
 
        emailjs.init(EMAILJS_PUBLIC_KEY);
-       
+       console.log("Destinatarios:", dests);
+      
       let totalEnviados = 0;
       for (const r of resumenes) {
         if (!r.hasInputs) continue;
@@ -150,7 +151,8 @@ function ResumenPage() {
         const asunto = `Analítica ${r.title} · ${new Date().toLocaleDateString("es-ES")}`;
 
         for (const d of dests) {
-          await emailjs.send(
+          await console.log("Enviando a:", d.email, "nombre:", d.nombre);
+          emailjs.send(
             EMAILJS_SERVICE_ID,
             EMAILJS_TEMPLATE_ID,
             {
