@@ -569,7 +569,7 @@ async function exportXlsx(rows: Row[], desde: string, hasta: string) {
   for (const sk of sectionKeys) {
     const sRows = rows.filter((r) => r.seccion === sk);
     if (sRows.length === 0) continue;
-    writeSectionSheet(wb, sk, sRows, desde, hasta);
+    writeSectionSheet(wb, sk, sRows);
   }
 
   const buffer = await wb.xlsx.writeBuffer();
@@ -582,6 +582,228 @@ async function exportXlsx(rows: Row[], desde: string, hasta: string) {
   a.download = `analiticas_${desde}_${hasta}.xlsx`;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+// ============== Excel template + import ==============
+
+async function buildTemplate(): Promise<ArrayBuffer> {
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "Calculadora Analíticas";
+  const sectionKeys: SectionKey[] = ["lacado", "anodizado", "extras"];
+
+  for (const sk of sectionKeys) {
+    const section = getSection(sk);
+    const inputs = section.groups.flatMap((g) =>
+      g.inputs.map((inp) => ({ key: inp.key, label: inp.label, unit: inp.unit, group: g.title }))
+    );
+    const ws = wb.addWorksheet(SECTION_NAMES[sk], {
+      views: [{ state: "frozen", ySplit: 3 }],
+    });
+
+    const headerLabels = [
+      "FECHA (DD/MM/YYYY HH:mm)",
+      "AUTOR (email)",
+      ...inputs.map((i) => `${i.group} · ${i.label}${i.unit ? ` (${i.unit})` : ""}`),
+      "OBSERVACIONES",
+    ];
+    const headerKeys = [
+      "__fecha__",
+      "__autor__",
+      ...inputs.map((i) => i.key),
+      "__observaciones__",
+    ];
+
+    ws.addRow(headerLabels);
+    ws.addRow(headerKeys);
+
+    ws.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
+    ws.getRow(1).fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: FILL_HEADER_GROUP },
+    };
+    ws.getRow(1).alignment = { wrapText: true, horizontal: "center", vertical: "middle" };
+    ws.getRow(1).height = 42;
+
+    ws.getRow(2).font = { italic: true, size: 9, color: { argb: "FF6B7280" } };
+    ws.getRow(2).fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFF3F4F6" },
+    };
+
+    const example = [
+      format(new Date(), "dd/MM/yyyy HH:mm"),
+      "tu@email.com",
+      ...inputs.map(() => ""),
+      "Observaciones opcionales",
+    ];
+    ws.addRow(example);
+    ws.getRow(3).font = { italic: true, color: { argb: "FF9CA3AF" } };
+
+    headerLabels.forEach((_, idx) => {
+      ws.getColumn(idx + 1).width = idx < 2 ? 22 : 22;
+    });
+  }
+
+  return (await wb.xlsx.writeBuffer()) as ArrayBuffer;
+}
+
+async function downloadTemplate() {
+  const buffer = await buildTemplate();
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "plantilla_analiticas.xlsx";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function parseFecha(v: unknown): string | null {
+  if (v instanceof Date) return v.toISOString();
+  if (typeof v === "number") {
+    const d = new Date(Math.round((v - 25569) * 86400 * 1000));
+    return isNaN(d.getTime()) ? null : d.toISOString();
+  }
+  if (typeof v === "string") {
+    const s = v.trim();
+    const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?$/);
+    if (m) {
+      const [, dd, mm, yyyy, hh = "0", mi = "0"] = m;
+      const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd), Number(hh), Number(mi));
+      return isNaN(d.getTime()) ? null : d.toISOString();
+    }
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? null : d.toISOString();
+  }
+  return null;
+}
+
+function cellToString(v: unknown): string {
+  if (v == null) return "";
+  if (typeof v === "object" && v !== null && "text" in v) {
+    return String((v as { text: unknown }).text ?? "");
+  }
+  if (typeof v === "object" && v !== null && "result" in v) {
+    return String((v as { result: unknown }).result ?? "");
+  }
+  return String(v);
+}
+
+function cellToNumber(v: unknown): number | null {
+  if (v == null || v === "") return null;
+  if (typeof v === "number") return Number.isFinite(v) ? v : null;
+  if (typeof v === "object" && v !== null && "result" in v) {
+    const r = (v as { result: unknown }).result;
+    if (typeof r === "number") return r;
+  }
+  const n = Number(String(v).replace(",", "."));
+  return Number.isFinite(n) ? n : null;
+}
+
+interface ImportResult {
+  inserted: number;
+  errors: string[];
+}
+
+async function importFromXlsx(
+  file: File,
+  autorId: string,
+  autorEmail: string | null
+): Promise<ImportResult> {
+  const buf = await file.arrayBuffer();
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(buf);
+
+  const sectionByName: Record<string, SectionKey> = {
+    LACADO: "lacado",
+    ANODIZADO: "anodizado",
+    EXTRAS: "extras",
+  };
+
+  const toInsert: {
+    seccion: SectionKey;
+    fecha: string;
+    inputs: Record<string, number>;
+    resultados: Record<string, number>;
+    observaciones: string | null;
+    autor_id: string;
+    autor_email: string | null;
+  }[] = [];
+  const errors: string[] = [];
+
+  for (const ws of wb.worksheets) {
+    const sk = sectionByName[ws.name.toUpperCase().trim()];
+    if (!sk) continue;
+    const section = getSection(sk);
+    const headerRow = ws.getRow(2);
+    const keys: string[] = [];
+    headerRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+      keys[colNumber] = cellToString(cell.value).trim();
+    });
+    if (!keys.includes("__fecha__")) {
+      errors.push(`Hoja "${ws.name}": falta la fila de claves (fila 2). Usa la plantilla.`);
+      continue;
+    }
+
+    const lastRow = ws.actualRowCount;
+    for (let rowNum = 3; rowNum <= lastRow; rowNum++) {
+      const row = ws.getRow(rowNum);
+      const map: Record<string, unknown> = {};
+      row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+        const k = keys[colNumber];
+        if (k) map[k] = cell.value;
+      });
+      const hasAnyInput = section.groups.some((g) =>
+        g.inputs.some((inp) => {
+          const v = cellToNumber(map[inp.key]);
+          return v !== null && v !== 0;
+        })
+      );
+      if (!hasAnyInput) continue;
+
+      const fecha = parseFecha(map["__fecha__"]);
+      if (!fecha) {
+        errors.push(`Hoja "${ws.name}" fila ${rowNum}: fecha inválida.`);
+        continue;
+      }
+
+      const inputs = defaultInputs(section);
+      for (const g of section.groups) {
+        for (const inp of g.inputs) {
+          const v = cellToNumber(map[inp.key]);
+          if (v !== null) inputs[inp.key] = v;
+        }
+      }
+      const results = computeResults(section, inputs);
+      const obs = cellToString(map["__observaciones__"]).trim();
+
+      toInsert.push({
+        seccion: sk,
+        fecha,
+        inputs,
+        resultados: Object.fromEntries(
+          section.groups.flatMap((g) => g.results.map((r) => [r.label, results[r.key]]))
+        ),
+        observaciones: obs || null,
+        autor_id: autorId,
+        autor_email: autorEmail,
+      });
+    }
+  }
+
+  if (toInsert.length === 0) {
+    return { inserted: 0, errors: errors.length ? errors : ["No se encontraron filas válidas."] };
+  }
+
+  const { error } = await supabase.from("analiticas").insert(toInsert);
+  if (error) {
+    return { inserted: 0, errors: [...errors, error.message] };
+  }
+  return { inserted: toInsert.length, errors };
 }
 
 void Download;
