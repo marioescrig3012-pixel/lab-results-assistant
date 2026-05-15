@@ -32,7 +32,7 @@ import ExcelJS from "exceljs";
 import { computeResults, defaultInputs } from "@/lib/calculos";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import { useRef } from "react";
+
 
 export const Route = createFileRoute("/historial")({
   component: () => (
