@@ -106,7 +106,7 @@ function Historial() {
       setRows((data ?? []) as Row[]);
       setLoading(false);
     });
-  }, [seccion, desde, hasta]);
+  }, [seccion, desde, hasta, reloadKey]);
 
   const chartSection: SectionKey = seccion === "todas" ? "lacado" : seccion;
   const section = getSection(chartSection);
