@@ -157,7 +157,7 @@ function ResumenPage() {
               {
                 to_email: d.email,
                 to_name: d.nombre ?? d.email,
-                subject: asunto,
+                subject: asunto.replace(/&amp;/g, "&").replace(/&#x2F;/g, "/").replace(/&/g, "&"),
                 section: r.title,
                 message: cuerpo,
                 from_name: user?.email ?? "Lab",
