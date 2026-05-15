@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AuthedShell } from "@/components/authed-shell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
