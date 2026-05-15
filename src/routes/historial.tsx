@@ -193,6 +193,28 @@ function Historial() {
               className="w-40"
             />
           </div>
+          <Button variant="outline" onClick={downloadTemplate}>
+            <FileDown className="mr-2 size-4" />
+            Plantilla
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={importing}
+          >
+            <Upload className="mr-2 size-4" />
+            {importing ? "Importando…" : "Importar"}
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) handleImport(f);
+            }}
+          />
           <Button onClick={() => exportXlsx(rows, desde, hasta)} disabled={rows.length === 0}>
             <FileSpreadsheet className="mr-2 size-4" />
             Exportar Excel
