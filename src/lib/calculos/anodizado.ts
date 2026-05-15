@@ -6,7 +6,7 @@ export const anodizado: SectionDef = {
   groups: [
     {
       key: "des1",
-      title: "Desengrase 1",
+      title: "DESENGRASE 1",
       inputs: [{ key: "des1_naoh", label: "Volumen NaOH 1N", unit: "ml", default: 0 }],
       results: [
         {
@@ -23,7 +23,7 @@ export const anodizado: SectionDef = {
     },
     {
       key: "des2",
-      title: "Desengrase 2",
+      title: "DESENGRASE 2",
       inputs: [{ key: "des2_naoh", label: "Volumen NaOH 1N", unit: "ml", default: 0 }],
       results: [
         {
@@ -165,7 +165,7 @@ export const anodizado: SectionDef = {
     },
     {
       key: "neut1",
-      title: "Neutralizado 1",
+      title: "NEUTRALIZADO 1",
       inputs: [
         { key: "n1_va", label: "Va · Tiosulfato Sódico 0,1N", unit: "ml", default: 0 },
         { key: "n1_v", label: "V · NaOH 1N", unit: "ml", default: 0 },
@@ -195,7 +195,7 @@ export const anodizado: SectionDef = {
     },
     {
       key: "neut2",
-      title: "Neutralizado 2",
+      title: "NEUTRALIZADO 2",
       inputs: [
         { key: "n2_va", label: "Va · Tiosulfato Sódico 0,1N", unit: "ml", default: 0 },
         { key: "n2_v", label: "V · NaOH 1N", unit: "ml", default: 0 },
@@ -225,7 +225,7 @@ export const anodizado: SectionDef = {
     },
     {
       key: "anod",
-      title: "Cuba de Anodizado",
+      title: "ANODIZADO",
       inputs: [
         { key: "an_bano", label: "Nº Baño", default: 0 },
         { key: "an_a", label: "A · NaOH 1M sin KF", unit: "ml", default: 0 },
@@ -274,7 +274,7 @@ export const anodizado: SectionDef = {
     },
     {
       key: "curado",
-      title: "Curado",
+      title: "CURADO",
       inputs: [
         { key: "cu_temp", label: "Temperatura", unit: "ºC", default: 0 },
         { key: "cu_ph", label: "pH", unit: "pH", default: 0 },
@@ -295,7 +295,7 @@ export const anodizado: SectionDef = {
     },
     {
       key: "color",
-      title: "Color (bronce/negro/acero)",
+      title: "COLOR (bronce/negro/acero)",
       inputs: [
         { key: "co_a", label: "A · Tiosulfato Sódico 0,1N", unit: "ml", default: 0 },
         { key: "co_v_yodo", label: "C · Volumen solución de yodo", unit: "ml", default: 50 },
@@ -333,7 +333,7 @@ export const anodizado: SectionDef = {
     },
     {
       key: "oro",
-      title: "Cuba de Oro (lunes/jueves)",
+      title: "ORO (lunes/jueves)",
       inputs: [
         { key: "oro_v", label: "A · Volumen baño a valorar", unit: "ml", default: 1 },
         { key: "oro_naoh", label: "B · Volumen NaOH 1N", unit: "ml", default: 0 },
@@ -363,7 +363,7 @@ export const anodizado: SectionDef = {
     },
     {
       key: "sellado",
-      title: "Sellado en Frío",
+      title: "SELLADO EN FRIO",
       inputs: [
         { key: "sf_v", label: "A · Volumen EDTA 0,1M", unit: "ml", default: 0 },
         { key: "sf_ph", label: "pH", unit: "pH", default: 0 },
