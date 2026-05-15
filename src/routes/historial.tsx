@@ -69,8 +69,9 @@ function Historial() {
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputHistRef = useRef<HTMLInputElement>(null);
   const [reloadKey, setReloadKey] = useState(0);
-
+  
   const handleImport = async (file: File) => {
     if (!user) {
       toast.error("Debes iniciar sesión");
@@ -194,9 +195,13 @@ function Historial() {
             />
           </div>
           <Button variant="outline" onClick={downloadTemplate}>
-            <FileDown className="mr-2 size-4" />
-            Plantilla
-          </Button>
+  <FileDown className="mr-2 size-4" />
+  Plantilla
+</Button>
+<Button variant="outline" onClick={downloadTemplateHistorica}>
+  <FileDown className="mr-2 size-4" />
+  Plantilla histórica
+</Button>
           <Button
             variant="outline"
             onClick={() => fileInputRef.current?.click()}
@@ -215,6 +220,40 @@ function Historial() {
               if (f) handleImport(f);
             }}
           />
+          <Button
+  variant="outline"
+  onClick={() => fileInputHistRef.current?.click()}
+  disabled={importing}
+>
+  <Upload className="mr-2 size-4" />
+  {importing ? "Importando…" : "Importar histórico"}
+</Button>
+<input
+  ref={fileInputHistRef}
+  type="file"
+  accept=".xlsx"
+  className="hidden"
+  onChange={(e) => {
+    const f = e.target.files?.[0];
+    if (f) {
+      if (!user) { toast.error("Debes iniciar sesión"); return; }
+      setImporting(true);
+      importFromXlsxHistorico(f, user.id, user.email ?? null)
+        .then((res) => {
+          if (res.inserted > 0) {
+            toast.success(`Importadas ${res.inserted} analítica(s)`);
+            setReloadKey((k) => k + 1);
+          }
+          for (const e of res.errors) toast.error(e);
+        })
+        .catch((e) => toast.error("Error: " + (e as Error).message))
+        .finally(() => {
+          setImporting(false);
+          if (fileInputHistRef.current) fileInputHistRef.current.value = "";
+        });
+    }
+  }}
+/>
           <Button onClick={() => exportXlsx(rows, desde, hasta)} disabled={rows.length === 0}>
             <FileSpreadsheet className="mr-2 size-4" />
             Exportar Excel
@@ -632,7 +671,270 @@ async function exportXlsx(rows: Row[], desde: string, hasta: string) {
 }
 
 // ============== Excel template + import ==============
+// ============== Plantilla histórica (resultados directos) ==============
 
+async function buildTemplateHistorica(): Promise<ArrayBuffer> {
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "Calculadora Analíticas - Histórico";
+
+  // LACADO
+  const wsL = wb.addWorksheet("LACADO", { views: [{ state: "frozen", ySplit: 2 }] });
+  const lacadoHeaders = [
+    "FECHA (DD/MM/YYYY HH:mm)", "AUTOR (email)",
+    "Desengrase 1 (%)", "Temperatura D1 (ºC)",
+    "Desengrase 2 (%)", "Temperatura D2 (ºC)",
+    "No Crómico (%)", "Temperatura NC (ºC)", "pH NC",
+    "Agua lavado (µS)", "Conductividad No Crómico (µS)",
+    "Tasa de ataque (gr/m²)", "Zirconio PC (mg/m²)",
+    "OBSERVACIONES",
+  ];
+  const lacadoKeys = [
+    "__fecha__", "__autor__",
+    "des1_conc", "des1_temp",
+    "des2_conc", "des2_temp",
+    "nc_conc", "nc_temp", "nc_ph",
+    "agua_desmi", "cond_nocromico",
+    "tasa_ataque", "zirconio_pc",
+    "__observaciones__",
+  ];
+  wsL.addRow(lacadoHeaders);
+  wsL.addRow(lacadoKeys);
+  wsL.addRow([format(new Date(), "dd/MM/yyyy HH:mm"), "tu@email.com", ...Array(12).fill(""), "Observaciones opcionales"]);
+  wsL.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
+  wsL.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: FILL_HEADER_GROUP } };
+  wsL.getRow(1).height = 42;
+  wsL.getRow(2).font = { italic: true, size: 9, color: { argb: "FF6B7280" } };
+  wsL.getRow(2).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF3F4F6" } };
+  lacadoHeaders.forEach((_, idx) => { wsL.getColumn(idx + 1).width = 22; });
+
+  // ANODIZADO
+  const wsA = wb.addWorksheet("ANODIZADO", { views: [{ state: "frozen", ySplit: 2 }] });
+  const anodHeaders = [
+    "FECHA (DD/MM/YYYY HH:mm)", "AUTOR (email)",
+    "Desengrase 1 (%)", "Desengrase 2 (%)",
+    "Sosa Flash (g/L)", "Aluminio Flash (g/L)",
+    "Sosa Henkel (g/L)", "Aluminio Henkel (g/L)", "Relación NaOH/Al Henkel",
+    "Sosa Alufinish (g/L)", "Aluminio Alufinish (g/L)", "Aditivo (ptos)", "Relación NaOH/Al Alufinish",
+    "Neutralizado 1 producto (g/L)", "Neutralizado 1 ácido (g/L)",
+    "Neutralizado 2 producto (g/L)", "Neutralizado 2 ácido (g/L)",
+    "Nº Baño", "Sulfúrico total (g/L)", "Sulfúrico libre (g/L)", "Aluminio anodizado (g/L)",
+    "Estaño (g/L)", "Producto color (g/L)", "Ácido color (g/L)",
+    "Producto oro (g/L)", "Ácido oro (g/L)",
+    "Producto sellado (g/L)", "pH sellado",
+    "Temperatura curado (ºC)", "pH curado", "Conductividad curado (µS)",
+    "OBSERVACIONES",
+  ];
+  const anodKeys = [
+    "__fecha__", "__autor__",
+    "des1_conc", "des2_conc",
+    "flash_sosa", "flash_al",
+    "sv_sosa", "sv_al", "sv_ratio",
+    "sn_sosa", "sn_al", "sn_aditivo_r", "sn_ratio",
+    "n1_prod", "n1_acido",
+    "n2_prod", "n2_acido",
+    "an_bano_r", "an_sulf_total", "an_sulf_libre", "an_al",
+    "co_estano", "co_producto", "co_acido",
+    "oro_prod", "oro_acido",
+    "sf_prod", "sf_ph_r",
+    "cu_temp_r", "cu_ph_r", "cu_cond_r",
+    "__observaciones__",
+  ];
+  wsA.addRow(anodHeaders);
+  wsA.addRow(anodKeys);
+  wsA.addRow([format(new Date(), "dd/MM/yyyy HH:mm"), "tu@email.com", ...Array(30).fill(""), "Observaciones opcionales"]);
+  wsA.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
+  wsA.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: FILL_HEADER_GROUP } };
+  wsA.getRow(1).height = 42;
+  wsA.getRow(2).font = { italic: true, size: 9, color: { argb: "FF6B7280" } };
+  wsA.getRow(2).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF3F4F6" } };
+  anodHeaders.forEach((_, idx) => { wsA.getColumn(idx + 1).width = 22; });
+
+  // EXTRAS
+  const wsE = wb.addWorksheet("EXTRAS", { views: [{ state: "frozen", ySplit: 2 }] });
+  const extrasHeaders = [
+    "FECHA (DD/MM/YYYY HH:mm)", "AUTOR (email)",
+    "Pérdida de peso (mg/dm²)", "Aluminio disuelto lacado (g/L)", "Zirconio Lacado PC (mg/m²)",
+    "OBSERVACIONES",
+  ];
+  const extrasKeys = [
+    "__fecha__", "__autor__",
+    "pp_perdida", "al_disuelto", "zr_pc_lacado",
+    "__observaciones__",
+  ];
+  wsE.addRow(extrasHeaders);
+  wsE.addRow(extrasKeys);
+  wsE.addRow([format(new Date(), "dd/MM/yyyy HH:mm"), "tu@email.com", ...Array(4).fill(""), "Observaciones opcionales"]);
+  wsE.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
+  wsE.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: FILL_HEADER_GROUP } };
+  wsE.getRow(1).height = 42;
+  wsE.getRow(2).font = { italic: true, size: 9, color: { argb: "FF6B7280" } };
+  wsE.getRow(2).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF3F4F6" } };
+  extrasHeaders.forEach((_, idx) => { wsE.getColumn(idx + 1).width = 22; });
+
+  return (await wb.xlsx.writeBuffer()) as ArrayBuffer;
+}
+
+async function downloadTemplateHistorica() {
+  const buffer = await buildTemplateHistorica();
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "plantilla_historica_analiticas.xlsx";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function importFromXlsxHistorico(
+  file: File,
+  autorId: string,
+  autorEmail: string | null
+): Promise<ImportResult> {
+  const buf = await file.arrayBuffer();
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(buf);
+
+  const sectionByName: Record<string, SectionKey> = {
+    LACADO: "lacado",
+    ANODIZADO: "anodizado",
+    EXTRAS: "extras",
+  };
+
+  const toInsert: {
+    seccion: SectionKey;
+    fecha: string;
+    inputs: Record<string, number>;
+    resultados: Record<string, number>;
+    observaciones: string | null;
+    autor_id: string;
+    autor_email: string | null;
+  }[] = [];
+  const errors: string[] = [];
+
+  for (const ws of wb.worksheets) {
+    const sk = sectionByName[ws.name.toUpperCase().trim()];
+    if (!sk) continue;
+
+    const headerRow = ws.getRow(2);
+    const keys: string[] = [];
+    headerRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+      keys[colNumber] = cellToString(cell.value).trim();
+    });
+
+    if (!keys.includes("__fecha__")) {
+      errors.push(`Hoja "${ws.name}": falta la fila de claves. Usa la plantilla histórica.`);
+      continue;
+    }
+
+    const resultKeyMap: Record<string, string> = {
+      // LACADO
+      des1_conc: "Concentración Desengrase 1",
+      des2_conc: "Concentración Desengrase 2",
+      nc_conc: "Concentración No Crómico",
+      tasa_ataque: "Tasa de ataque",
+      zirconio_pc: "PC",
+      // ANODIZADO
+      flash_sosa: "Sosa",
+      flash_al: "Aluminio",
+      sv_sosa: "Sosa",
+      sv_al: "Aluminio",
+      sv_ratio: "Relación NaOH/Al",
+      sn_sosa: "Hidróxido sódico",
+      sn_al: "Aluminio",
+      sn_aditivo_r: "Aditivo",
+      sn_ratio: "Relación NaOH/Al",
+      n1_prod: "Producto",
+      n1_acido: "Ácido",
+      n2_prod: "Producto",
+      n2_acido: "Ácido",
+      an_bano_r: "Nº Baño",
+      an_sulf_total: "Sulfúrico total",
+      an_sulf_libre: "Sulfúrico libre",
+      an_al: "Aluminio",
+      co_estano: "Estaño",
+      co_producto: "Concentración producto",
+      co_acido: "Ácido sulfúrico",
+      oro_prod: "Producto",
+      oro_acido: "Ácido sulfúrico",
+      sf_prod: "Producto",
+      sf_ph_r: "pH",
+      cu_temp_r: "Temperatura",
+      cu_ph_r: "pH",
+      cu_cond_r: "Conductividad",
+      // EXTRAS
+      pp_perdida: "Pérdida de peso",
+      al_disuelto: "Aluminio disuelto",
+      zr_pc_lacado: "PC",
+    };
+
+    const inputKeyMap: Record<string, string> = {
+      des1_temp: "des1_temp",
+      des2_temp: "des2_temp",
+      nc_temp: "nc_temp",
+      nc_ph: "nc_ph",
+      agua_desmi: "agua_desmi",
+      cond_nocromico: "cond_nocromico",
+      an_bano_r: "an_bano",
+    };
+
+    const lastRow = ws.actualRowCount;
+    for (let rowNum = 3; rowNum <= lastRow; rowNum++) {
+      const row = ws.getRow(rowNum);
+      const map: Record<string, unknown> = {};
+      row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+        const k = keys[colNumber];
+        if (k) map[k] = cell.value;
+      });
+
+      const hasAnyValue = Object.entries(map).some(([k, v]) => {
+        if (k === "__fecha__" || k === "__autor__" || k === "__observaciones__") return false;
+        const n = cellToNumber(v);
+        return n !== null && n !== 0;
+      });
+      if (!hasAnyValue) continue;
+
+      const fecha = parseFecha(map["__fecha__"]);
+      if (!fecha) {
+        errors.push(`Hoja "${ws.name}" fila ${rowNum}: fecha inválida.`);
+        continue;
+      }
+
+      const inputs: Record<string, number> = {};
+      const resultados: Record<string, number> = {};
+
+      for (const [key, val] of Object.entries(map)) {
+        if (key === "__fecha__" || key === "__autor__" || key === "__observaciones__") continue;
+        const n = cellToNumber(val);
+        if (n === null) continue;
+        if (inputKeyMap[key]) inputs[inputKeyMap[key]] = n;
+        if (resultKeyMap[key]) resultados[resultKeyMap[key]] = n;
+      }
+
+      const obs = cellToString(map["__observaciones__"]).trim();
+      toInsert.push({
+        seccion: sk,
+        fecha,
+        inputs,
+        resultados,
+        observaciones: obs || null,
+        autor_id: autorId,
+        autor_email: autorEmail,
+      });
+    }
+  }
+
+  if (toInsert.length === 0) {
+    return { inserted: 0, errors: errors.length ? errors : ["No se encontraron filas válidas."] };
+  }
+
+  const { error } = await supabase.from("analiticas").insert(toInsert);
+  if (error) {
+    return { inserted: 0, errors: [...errors, error.message] };
+  }
+  return { inserted: toInsert.length, errors };
+}
 async function buildTemplate(): Promise<ArrayBuffer> {
   const wb = new ExcelJS.Workbook();
   wb.creator = "Calculadora Analíticas";
@@ -772,7 +1074,7 @@ async function importFromXlsx(
   };
 
   const toInsert: {
-    seccion: SectionKey;
+    seccion: SecFtionKey;
     fecha: string;
     inputs: Record<string, number>;
     resultados: Record<string, number>;
