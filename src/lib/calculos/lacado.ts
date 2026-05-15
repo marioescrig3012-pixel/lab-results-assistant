@@ -10,7 +10,7 @@ export const lacado: SectionDef = {
   groups: [
     {
       key: "agua",
-      title: "Agua desmineralizada y conductividad No Crómico",
+      title: "CONDUCTIVIDAD AGUA DESMINERALIZADA y NO CROMICO",
       inputs: [
         { key: "agua_desmi", label: "Conductividad agua desmineralizada", unit: "µS", default: 0 },
         { key: "cond_nocromico", label: "Conductividad del No Crómico", unit: "µS", default: 0 },
@@ -35,7 +35,7 @@ export const lacado: SectionDef = {
     },
     {
       key: "des1",
-      title: "Desengrase 1",
+      title: "DESENGRASE 1",
       inputs: [
         { key: "des1_naoh", label: "Volumen NaOH 0,1N (valoración)", unit: "ml", default: 0 },
         { key: "des1_temp", label: "Temperatura cuba", unit: "ºC", default: 0 },
@@ -56,7 +56,7 @@ export const lacado: SectionDef = {
     },
     {
       key: "des2",
-      title: "Desengrase 2",
+      title: "DESENGRASE 2",
       inputs: [
         { key: "des2_naoh", label: "Volumen NaOH 0,1N (valoración)", unit: "ml", default: 0 },
         { key: "des2_temp", label: "Temperatura cuba", unit: "ºC", default: 0 },
@@ -77,7 +77,7 @@ export const lacado: SectionDef = {
     },
     {
       key: "nocromico",
-      title: "No Crómico",
+      title: "NO CRÓMICO",
       inputs: [
         { key: "nc_naoh", label: "Volumen NaOH 0,1N (valoración)", unit: "ml", default: 0 },
         { key: "nc_temp", label: "Temperatura", unit: "ºC", default: 0 },
@@ -109,7 +109,7 @@ export const lacado: SectionDef = {
     },
     {
       key: "ataque",
-      title: "Tasa de ataque",
+      title: "TASA DE ATAQUE",
       inputs: [
         { key: "p_ini", label: "P. inicial (antes túnel)", unit: "g", default: 0, step: 0.0001 },
         { key: "p_fin", label: "P. final (después túnel)", unit: "g", default: 0, step: 0.0001 },
@@ -128,7 +128,7 @@ export const lacado: SectionDef = {
       ],
     },
     {
-      key: "zirconio",
+      key: "ZIRCONIO",
       title: "Zirconio (sobre chapa Sopena)",
       inputs: [
         { key: "abs", label: "Lectura absorbancia", unit: "mAbs", default: 0 },
