@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AuthedShell } from "@/components/authed-shell";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,8 +27,12 @@ import {
   Legend,
 } from "recharts";
 import { format } from "date-fns";
-import { Download, FileSpreadsheet } from "lucide-react";
+import { Download, FileSpreadsheet, Upload, FileDown } from "lucide-react";
 import ExcelJS from "exceljs";
+import { computeResults, defaultInputs } from "@/lib/calculos";
+import { useAuth } from "@/hooks/use-auth";
+import { toast } from "sonner";
+
 
 export const Route = createFileRoute("/historial")({
   component: () => (
@@ -56,12 +60,37 @@ const daysAgoISO = (d: number) => {
 };
 
 function Historial() {
+  const { user } = useAuth();
   const [seccion, setSeccion] = useState<SectionKey | "todas">("lacado");
   const [desde, setDesde] = useState<string>(daysAgoISO(30));
   const [hasta, setHasta] = useState<string>(todayISO());
   const [rows, setRows] = useState<Row[]>([]);
   const [param, setParam] = useState<string>("");
   const [loading, setLoading] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  const handleImport = async (file: File) => {
+    if (!user) {
+      toast.error("Debes iniciar sesión");
+      return;
+    }
+    setImporting(true);
+    try {
+      const res = await importFromXlsx(file, user.id, user.email ?? null);
+      if (res.inserted > 0) {
+        toast.success(`Importadas ${res.inserted} analítica(s)`);
+        setReloadKey((k) => k + 1);
+      }
+      for (const e of res.errors) toast.error(e);
+    } catch (e) {
+      toast.error("Error importando: " + (e as Error).message);
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -77,7 +106,7 @@ function Historial() {
       setRows((data ?? []) as Row[]);
       setLoading(false);
     });
-  }, [seccion, desde, hasta]);
+  }, [seccion, desde, hasta, reloadKey]);
 
   const chartSection: SectionKey = seccion === "todas" ? "lacado" : seccion;
   const section = getSection(chartSection);
@@ -164,6 +193,28 @@ function Historial() {
               className="w-40"
             />
           </div>
+          <Button variant="outline" onClick={downloadTemplate}>
+            <FileDown className="mr-2 size-4" />
+            Plantilla
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={importing}
+          >
+            <Upload className="mr-2 size-4" />
+            {importing ? "Importando…" : "Importar"}
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) handleImport(f);
+            }}
+          />
           <Button onClick={() => exportXlsx(rows, desde, hasta)} disabled={rows.length === 0}>
             <FileSpreadsheet className="mr-2 size-4" />
             Exportar Excel
@@ -441,41 +492,30 @@ const SECTION_NAMES: Record<SectionKey, string> = {
 function writeSectionSheet(
   wb: ExcelJS.Workbook,
   sk: SectionKey,
-  rows: Row[],
-  desde: string,
-  hasta: string
+  rows: Row[]
 ) {
   const cols = SECTION_COLS[sk];
   const ws = wb.addWorksheet(SECTION_NAMES[sk], {
-    views: [{ state: "frozen", xSplit: 1, ySplit: 4 }],
+    views: [{ state: "frozen", xSplit: 1, ySplit: 2 }],
   });
 
-  // Title row
   const totalCols = 2 + cols.length + 1; // FECHA + AUTOR + cols + Observaciones
-  ws.mergeCells(1, 1, 1, totalCols);
-  const t = ws.getCell(1, 1);
-  t.value = `${SECTION_NAMES[sk]} · ${desde} → ${hasta}`;
-  t.font = { bold: true, size: 14, color: { argb: "FFFFFFFF" } };
-  t.fill = { type: "pattern", pattern: "solid", fgColor: { argb: FILL_HEADER_GROUP } };
-  t.alignment = { vertical: "middle", horizontal: "center" };
-  ws.getRow(1).height = 24;
 
-  // Group header row (row 2)
-  ws.mergeCells(2, 1, 3, 1); // FECHA spans rows 2-3
-  ws.getCell(2, 1).value = "FECHA";
-  ws.mergeCells(2, 2, 3, 2); // AUTOR spans rows 2-3
-  ws.getCell(2, 2).value = "AUTOR";
+  // Group header row (row 1)
+  ws.mergeCells(1, 1, 2, 1); // FECHA spans rows 1-2
+  ws.getCell(1, 1).value = "FECHA";
+  ws.mergeCells(1, 2, 2, 2); // AUTOR spans rows 1-2
+  ws.getCell(1, 2).value = "AUTOR";
 
-  let col = 3;
-  // Group cells - merge consecutive same-group cols
+  const col = 3;
   let i = 0;
   while (i < cols.length) {
     const g = cols[i].group;
     let j = i;
     while (j < cols.length && cols[j].group === g) j++;
     const span = j - i;
-    if (span > 1) ws.mergeCells(2, col + i, 2, col + j - 1);
-    const c = ws.getCell(2, col + i);
+    if (span > 1) ws.mergeCells(1, col + i, 1, col + j - 1);
+    const c = ws.getCell(1, col + i);
     c.value = g;
     c.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 11 };
     c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: FILL_HEADER_GROUP } };
@@ -483,8 +523,8 @@ function writeSectionSheet(
     i = j;
   }
   // Observaciones group cell
-  ws.mergeCells(2, col + cols.length, 3, col + cols.length);
-  const obsTop = ws.getCell(2, col + cols.length);
+  ws.mergeCells(1, col + cols.length, 2, col + cols.length);
+  const obsTop = ws.getCell(1, col + cols.length);
   obsTop.value = "OBSERVACIONES";
   obsTop.font = { bold: true, color: { argb: "FFFFFFFF" } };
   obsTop.fill = { type: "pattern", pattern: "solid", fgColor: { argb: FILL_HEADER_GROUP } };
@@ -492,15 +532,15 @@ function writeSectionSheet(
 
   // Style FECHA / AUTOR header
   [1, 2].forEach((c2) => {
-    const cc = ws.getCell(2, c2);
+    const cc = ws.getCell(1, c2);
     cc.font = { bold: true, color: { argb: "FFFFFFFF" } };
     cc.fill = { type: "pattern", pattern: "solid", fgColor: { argb: FILL_HEADER_GROUP } };
     cc.alignment = { horizontal: "center", vertical: "middle" };
   });
 
-  // Field header row (row 3)
+  // Field header row (row 2)
   cols.forEach((cc, idx) => {
-    const cell = ws.getCell(3, col + idx);
+    const cell = ws.getCell(2, col + idx);
     cell.value = cc.header;
     cell.font = { bold: true, size: 10 };
     cell.alignment = { wrapText: true, horizontal: "center", vertical: "middle" };
@@ -514,26 +554,12 @@ function writeSectionSheet(
       bottom: { style: "medium", color: { argb: "FF111827" } },
     };
   });
-  ws.getRow(3).height = 38;
+  ws.getRow(2).height = 38;
 
-  // Data rows starting at row 4
+  // Data rows starting at row 3 (chronological order, no day separators)
   const sorted = [...rows].sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
-  let rowIdx = 4;
-  let lastDay = "";
+  let rowIdx = 3;
   for (const r of sorted) {
-    const day = format(new Date(r.fecha), "yyyy-MM-dd");
-    if (day !== lastDay) {
-      // Day separator
-      ws.mergeCells(rowIdx, 1, rowIdx, totalCols);
-      const sep = ws.getCell(rowIdx, 1);
-      sep.value = format(new Date(r.fecha), "EEEE dd/MM/yyyy");
-      sep.font = { bold: true, color: { argb: "FF111827" } };
-      sep.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE0E7FF" } };
-      sep.alignment = { horizontal: "left" };
-      lastDay = day;
-      rowIdx++;
-    }
-
     const dataRow = ws.getRow(rowIdx);
     dataRow.getCell(1).value = format(new Date(r.fecha), "dd/MM/yyyy HH:mm");
     dataRow.getCell(2).value = r.autor_email ?? "";
@@ -546,7 +572,6 @@ function writeSectionSheet(
         cell.value = v;
       }
       if (cc.numFmt) cell.numFmt = cc.numFmt;
-      // Coloring based on range
       if (typeof v === "number" && Number.isFinite(v)) {
         const status = statusFor(v, cc.min, cc.max);
         if (status === "warn") {
@@ -591,7 +616,7 @@ async function exportXlsx(rows: Row[], desde: string, hasta: string) {
   for (const sk of sectionKeys) {
     const sRows = rows.filter((r) => r.seccion === sk);
     if (sRows.length === 0) continue;
-    writeSectionSheet(wb, sk, sRows, desde, hasta);
+    writeSectionSheet(wb, sk, sRows);
   }
 
   const buffer = await wb.xlsx.writeBuffer();
@@ -604,6 +629,228 @@ async function exportXlsx(rows: Row[], desde: string, hasta: string) {
   a.download = `analiticas_${desde}_${hasta}.xlsx`;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+// ============== Excel template + import ==============
+
+async function buildTemplate(): Promise<ArrayBuffer> {
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "Calculadora Analíticas";
+  const sectionKeys: SectionKey[] = ["lacado", "anodizado", "extras"];
+
+  for (const sk of sectionKeys) {
+    const section = getSection(sk);
+    const inputs = section.groups.flatMap((g) =>
+      g.inputs.map((inp) => ({ key: inp.key, label: inp.label, unit: inp.unit, group: g.title }))
+    );
+    const ws = wb.addWorksheet(SECTION_NAMES[sk], {
+      views: [{ state: "frozen", ySplit: 3 }],
+    });
+
+    const headerLabels = [
+      "FECHA (DD/MM/YYYY HH:mm)",
+      "AUTOR (email)",
+      ...inputs.map((i) => `${i.group} · ${i.label}${i.unit ? ` (${i.unit})` : ""}`),
+      "OBSERVACIONES",
+    ];
+    const headerKeys = [
+      "__fecha__",
+      "__autor__",
+      ...inputs.map((i) => i.key),
+      "__observaciones__",
+    ];
+
+    ws.addRow(headerLabels);
+    ws.addRow(headerKeys);
+
+    ws.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
+    ws.getRow(1).fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: FILL_HEADER_GROUP },
+    };
+    ws.getRow(1).alignment = { wrapText: true, horizontal: "center", vertical: "middle" };
+    ws.getRow(1).height = 42;
+
+    ws.getRow(2).font = { italic: true, size: 9, color: { argb: "FF6B7280" } };
+    ws.getRow(2).fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFF3F4F6" },
+    };
+
+    const example = [
+      format(new Date(), "dd/MM/yyyy HH:mm"),
+      "tu@email.com",
+      ...inputs.map(() => ""),
+      "Observaciones opcionales",
+    ];
+    ws.addRow(example);
+    ws.getRow(3).font = { italic: true, color: { argb: "FF9CA3AF" } };
+
+    headerLabels.forEach((_, idx) => {
+      ws.getColumn(idx + 1).width = idx < 2 ? 22 : 22;
+    });
+  }
+
+  return (await wb.xlsx.writeBuffer()) as ArrayBuffer;
+}
+
+async function downloadTemplate() {
+  const buffer = await buildTemplate();
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "plantilla_analiticas.xlsx";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function parseFecha(v: unknown): string | null {
+  if (v instanceof Date) return v.toISOString();
+  if (typeof v === "number") {
+    const d = new Date(Math.round((v - 25569) * 86400 * 1000));
+    return isNaN(d.getTime()) ? null : d.toISOString();
+  }
+  if (typeof v === "string") {
+    const s = v.trim();
+    const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?$/);
+    if (m) {
+      const [, dd, mm, yyyy, hh = "0", mi = "0"] = m;
+      const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd), Number(hh), Number(mi));
+      return isNaN(d.getTime()) ? null : d.toISOString();
+    }
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? null : d.toISOString();
+  }
+  return null;
+}
+
+function cellToString(v: unknown): string {
+  if (v == null) return "";
+  if (typeof v === "object" && v !== null && "text" in v) {
+    return String((v as { text: unknown }).text ?? "");
+  }
+  if (typeof v === "object" && v !== null && "result" in v) {
+    return String((v as { result: unknown }).result ?? "");
+  }
+  return String(v);
+}
+
+function cellToNumber(v: unknown): number | null {
+  if (v == null || v === "") return null;
+  if (typeof v === "number") return Number.isFinite(v) ? v : null;
+  if (typeof v === "object" && v !== null && "result" in v) {
+    const r = (v as { result: unknown }).result;
+    if (typeof r === "number") return r;
+  }
+  const n = Number(String(v).replace(",", "."));
+  return Number.isFinite(n) ? n : null;
+}
+
+interface ImportResult {
+  inserted: number;
+  errors: string[];
+}
+
+async function importFromXlsx(
+  file: File,
+  autorId: string,
+  autorEmail: string | null
+): Promise<ImportResult> {
+  const buf = await file.arrayBuffer();
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(buf);
+
+  const sectionByName: Record<string, SectionKey> = {
+    LACADO: "lacado",
+    ANODIZADO: "anodizado",
+    EXTRAS: "extras",
+  };
+
+  const toInsert: {
+    seccion: SectionKey;
+    fecha: string;
+    inputs: Record<string, number>;
+    resultados: Record<string, number>;
+    observaciones: string | null;
+    autor_id: string;
+    autor_email: string | null;
+  }[] = [];
+  const errors: string[] = [];
+
+  for (const ws of wb.worksheets) {
+    const sk = sectionByName[ws.name.toUpperCase().trim()];
+    if (!sk) continue;
+    const section = getSection(sk);
+    const headerRow = ws.getRow(2);
+    const keys: string[] = [];
+    headerRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+      keys[colNumber] = cellToString(cell.value).trim();
+    });
+    if (!keys.includes("__fecha__")) {
+      errors.push(`Hoja "${ws.name}": falta la fila de claves (fila 2). Usa la plantilla.`);
+      continue;
+    }
+
+    const lastRow = ws.actualRowCount;
+    for (let rowNum = 3; rowNum <= lastRow; rowNum++) {
+      const row = ws.getRow(rowNum);
+      const map: Record<string, unknown> = {};
+      row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+        const k = keys[colNumber];
+        if (k) map[k] = cell.value;
+      });
+      const hasAnyInput = section.groups.some((g) =>
+        g.inputs.some((inp) => {
+          const v = cellToNumber(map[inp.key]);
+          return v !== null && v !== 0;
+        })
+      );
+      if (!hasAnyInput) continue;
+
+      const fecha = parseFecha(map["__fecha__"]);
+      if (!fecha) {
+        errors.push(`Hoja "${ws.name}" fila ${rowNum}: fecha inválida.`);
+        continue;
+      }
+
+      const inputs = defaultInputs(section);
+      for (const g of section.groups) {
+        for (const inp of g.inputs) {
+          const v = cellToNumber(map[inp.key]);
+          if (v !== null) inputs[inp.key] = v;
+        }
+      }
+      const results = computeResults(section, inputs);
+      const obs = cellToString(map["__observaciones__"]).trim();
+
+      toInsert.push({
+        seccion: sk,
+        fecha,
+        inputs,
+        resultados: Object.fromEntries(
+          section.groups.flatMap((g) => g.results.map((r) => [r.label, results[r.key]]))
+        ),
+        observaciones: obs || null,
+        autor_id: autorId,
+        autor_email: autorEmail,
+      });
+    }
+  }
+
+  if (toInsert.length === 0) {
+    return { inserted: 0, errors: errors.length ? errors : ["No se encontraron filas válidas."] };
+  }
+
+  const { error } = await supabase.from("analiticas").insert(toInsert);
+  if (error) {
+    return { inserted: 0, errors: [...errors, error.message] };
+  }
+  return { inserted: toInsert.length, errors };
 }
 
 void Download;
