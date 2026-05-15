@@ -60,12 +60,37 @@ const daysAgoISO = (d: number) => {
 };
 
 function Historial() {
+  const { user } = useAuth();
   const [seccion, setSeccion] = useState<SectionKey | "todas">("lacado");
   const [desde, setDesde] = useState<string>(daysAgoISO(30));
   const [hasta, setHasta] = useState<string>(todayISO());
   const [rows, setRows] = useState<Row[]>([]);
   const [param, setParam] = useState<string>("");
   const [loading, setLoading] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  const handleImport = async (file: File) => {
+    if (!user) {
+      toast.error("Debes iniciar sesión");
+      return;
+    }
+    setImporting(true);
+    try {
+      const res = await importFromXlsx(file, user.id, user.email ?? null);
+      if (res.inserted > 0) {
+        toast.success(`Importadas ${res.inserted} analítica(s)`);
+        setReloadKey((k) => k + 1);
+      }
+      for (const e of res.errors) toast.error(e);
+    } catch (e) {
+      toast.error("Error importando: " + (e as Error).message);
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   useEffect(() => {
     setLoading(true);
