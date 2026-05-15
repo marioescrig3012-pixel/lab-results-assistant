@@ -74,14 +74,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "ANALITICAS ACABADOS" },
+      { name: "description", content: "Lab Results Assistant automates laboratory analysis calculations and reporting for anodizing and lacquering processes." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "ANALITICAS ACABADOS" },
+      { property: "og:description", content: "Lab Results Assistant automates laboratory analysis calculations and reporting for anodizing and lacquering processes." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "ANALITICAS ACABADOS" },
+      { name: "twitter:description", content: "Lab Results Assistant automates laboratory analysis calculations and reporting for anodizing and lacquering processes." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/239d30e3-ad93-497d-a9b8-567aa699e2e9/id-preview-7d90a81a--05deb787-7312-4864-82ec-992a4037bc19.lovable.app-1778833230567.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/239d30e3-ad93-497d-a9b8-567aa699e2e9/id-preview-7d90a81a--05deb787-7312-4864-82ec-992a4037bc19.lovable.app-1778833230567.png" },
     ],
     links: [
       {
