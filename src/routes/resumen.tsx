@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 import emailjs from "@emailjs/browser";
 import type { SectionKey } from "@/lib/calculos";
 
-const EMAILJS_SERVICE_ID = "service_hjdqazw";
+const EMAILJS_SERVICE_ID = "service_bc01dld";
 const EMAILJS_TEMPLATE_ID = "template_kx4f3sg";
 const EMAILJS_PUBLIC_KEY = "5oKqkNZmWPC3L50eM";
 
