@@ -136,6 +136,8 @@ function ResumenPage() {
       const ok = await guardar();
       if (!ok) return;
 
+       emailjs.init(EMAILJS_PUBLIC_KEY);
+       
       let totalEnviados = 0;
       for (const r of resumenes) {
         if (!r.hasInputs) continue;
