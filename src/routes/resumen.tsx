@@ -101,15 +101,22 @@ function ResumenPage() {
         .filter((e): e is string => !!e);
       const rows = resumenes
         .filter((r) => r.hasInputs)
-        .map((r) => ({
-          seccion: r.key,
-          inputs: state.inputs[r.key],
-          resultados: Object.fromEntries(r.items.map((it) => [it.label, it.value])),
-          observaciones: state.observaciones[r.key] || null,
-          autor_id: user.id,
-          autor_email: user.email,
-          enviado_a: enviados.length > 0 ? enviados : null,
-        }));
+        .map((r) => {
+          const allInputs = state.inputs[r.key];
+          const filteredInputs: Record<string, number> = {};
+          for (const k of r.activeInputKeys) {
+            if (k in allInputs) filteredInputs[k] = allInputs[k];
+          }
+          return {
+            seccion: r.key,
+            inputs: filteredInputs,
+            resultados: Object.fromEntries(r.items.map((it) => [it.label, it.value])),
+            observaciones: state.observaciones[r.key] || null,
+            autor_id: user.id,
+            autor_email: user.email,
+            enviado_a: enviados.length > 0 ? enviados : null,
+          };
+        });
       const { error } = await supabase.from("analiticas").insert(rows);
       if (error) throw error;
       toast.success(`Guardadas ${rows.length} analítica(s)`);
