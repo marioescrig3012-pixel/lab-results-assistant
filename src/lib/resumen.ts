@@ -26,6 +26,12 @@ export interface SeccionResumen {
   ok: number;
   warn: number;
   hasInputs: boolean;
+  /** keys of groups that have at least one non-zero input */
+  activeGroupKeys: string[];
+  /** input keys belonging to active groups */
+  activeInputKeys: string[];
+  /** result keys belonging to active groups */
+  activeResultKeys: string[];
 }
 
 export function buildResumen(
@@ -35,10 +41,21 @@ export function buildResumen(
   const section: SectionDef = getSection(sectionKey);
   const results = computeResults(section, inputs);
   const items: ResumenItem[] = [];
+  const activeGroupKeys: string[] = [];
+  const activeInputKeys: string[] = [];
+  const activeResultKeys: string[] = [];
   let ok = 0;
   let warn = 0;
   for (const g of section.groups) {
+    const groupActive = g.inputs.some((inp) => {
+      const v = inputs[inp.key];
+      return Number.isFinite(v) && v !== 0;
+    });
+    if (!groupActive) continue;
+    activeGroupKeys.push(g.key);
+    for (const inp of g.inputs) activeInputKeys.push(inp.key);
     for (const r of g.results) {
+      activeResultKeys.push(r.key);
       const v = results[r.key];
       const st = statusFor(v, r.min, r.max);
       if (st === "ok") ok++;
@@ -56,9 +73,18 @@ export function buildResumen(
       });
     }
   }
-  // hasInputs: any input is non-zero
-  const hasInputs = Object.values(inputs).some((v) => v !== 0 && Number.isFinite(v));
-  return { key: sectionKey, title: section.title, items, ok, warn, hasInputs };
+  const hasInputs = activeGroupKeys.length > 0;
+  return {
+    key: sectionKey,
+    title: section.title,
+    items,
+    ok,
+    warn,
+    hasInputs,
+    activeGroupKeys,
+    activeInputKeys,
+    activeResultKeys,
+  };
 }
 
 export function emailBody(
