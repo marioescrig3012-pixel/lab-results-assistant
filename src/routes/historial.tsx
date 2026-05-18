@@ -1033,7 +1033,7 @@ async function importFromXlsx(
   };
 
   const toInsert: {
-    seccion: SecFtionKey;
+    seccion: SectionKey;
     fecha: string;
     inputs: Record<string, number>;
     resultados: Record<string, number>;
