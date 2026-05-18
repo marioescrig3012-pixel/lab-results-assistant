@@ -427,38 +427,40 @@ const LACADO_COLS: ColSpec[] = [
 
 // --- ANODIZADO columns (matches user's Excel template) ---
 const ANODIZADO_COLS: ColSpec[] = [
-  { group: "DESENGRASE 1", header: "Concentración %", get: (r) => r.resultados["Concentración Desengrase 1"] ?? null, min: 2, max: 4, numFmt: "0.00", width: 16 },
-  { group: "DESENGRASE 2", header: "Concentración %", get: (r) => r.resultados["Concentración Desengrase 2"] ?? null, min: 2, max: 4, numFmt: "0.00", width: 16 },
-  { group: "SOSA MATE HENKEL", header: "Sosa (g/L) (70-110)", get: (r) => r.resultados["Sosa"] && r.inputs.sv_a !== undefined ? (r.inputs.sv_a * 20 - r.inputs.sv_b * 6.7) : null, min: 70, max: 110, numFmt: "0.0", width: 16 },
-  { group: "SOSA MATE HENKEL", header: "Aluminio (g/L) (90-200)", get: (r) => r.inputs.sv_b !== undefined ? (r.inputs.sv_b * 13.6) / 3.03 : null, min: 90, max: 200, numFmt: "0.0", width: 18 },
+  { group: "DESENGRASE 1", header: "Concentración %", get: (r) => r.resultados["Concentración Desengrase 1"] ?? r.inputs.des1_conc ?? null, min: 2, max: 4, numFmt: "0.00", width: 16 },
+  { group: "DESENGRASE 2", header: "Concentración %", get: (r) => r.resultados["Concentración Desengrase 2"] ?? r.inputs.des2_conc ?? null, min: 2, max: 4, numFmt: "0.00", width: 16 },
+  { group: "SOSA MATE HENKEL", header: "Sosa (g/L) (70-110)", get: (r) => r.inputs.sv_a !== undefined ? (r.inputs.sv_a * 20 - (r.inputs.sv_b ?? 0) * 6.7) : (r.inputs.sv_sosa ?? null), min: 70, max: 110, numFmt: "0.0", width: 16 },
+  { group: "SOSA MATE HENKEL", header: "Aluminio (g/L) (90-200)", get: (r) => r.inputs.sv_b !== undefined ? (r.inputs.sv_b * 13.6) / 3.03 : (r.inputs.sv_al ?? null), min: 90, max: 200, numFmt: "0.0", width: 18 },
   { group: "SOSA MATE HENKEL", header: "Relación sosa/Al", get: (r) => {
-      if (r.inputs.sv_a === undefined) return null;
-      const s = r.inputs.sv_a * 20 - r.inputs.sv_b * 6.7;
-      const al = (r.inputs.sv_b * 13.6) / 3.03;
-      return al > 0 ? s / al : null;
+      if (r.inputs.sv_a !== undefined) {
+        const s = r.inputs.sv_a * 20 - (r.inputs.sv_b ?? 0) * 6.7;
+        const al = ((r.inputs.sv_b ?? 0) * 13.6) / 3.03;
+        return al > 0 ? s / al : null;
+      }
+      return r.inputs.sv_ratio ?? null;
     }, min: 0.8, max: 1, numFmt: "0.00", width: 14 },
-  { group: "SOSA MATE ALUFINISH", header: "Hidróxido sódico (g/L)", get: (r) => r.resultados["Hidróxido sódico"] ?? null, min: 50, max: 80, numFmt: "0.0", width: 18 },
-  { group: "SOSA MATE ALUFINISH", header: "Aluminio (g/L)", get: (r) => r.resultados["Aluminio"] ?? null, numFmt: "0.00", width: 14 },
-  { group: "SOSA MATE ALUFINISH", header: "Aditivo (ptos)", get: (r) => r.resultados["Aditivo"] ?? null, min: 22, numFmt: "0.0", width: 14 },
-  { group: "SOSA FLASH", header: "Sosa (g/L) (50-70)", get: (r) => r.inputs.flash_a !== undefined ? r.inputs.flash_a * 20 - r.inputs.flash_b * 6.7 : null, min: 50, max: 70, numFmt: "0.0", width: 16 },
-  { group: "SOSA FLASH", header: "Aluminio (g/L)", get: (r) => r.inputs.flash_b !== undefined ? (r.inputs.flash_b * 13.6) / 3.03 : null, max: 60, numFmt: "0.0", width: 14 },
-  { group: "NEUTRALIZADO 1", header: "Conc. g/L", get: (r) => r.resultados["Producto"] ?? null, min: 5, max: 15, numFmt: "0.00", width: 12 },
-  { group: "NEUTRALIZADO 1", header: "Ác. sulfúrico g/L", get: (r) => r.resultados["Ácido"] ?? null, min: 80, max: 120, numFmt: "0.0", width: 16 },
-  { group: "NEUTRALIZADO 2", header: "Conc. g/L", get: (r) => r.resultados["Producto"] ?? null, min: 5, max: 15, numFmt: "0.00", width: 12 },
-  { group: "NEUTRALIZADO 2", header: "Ác. sulfúrico g/L", get: (r) => r.resultados["Ácido"] ?? null, min: 80, max: 120, numFmt: "0.0", width: 16 },
+  { group: "SOSA MATE ALUFINISH", header: "Hidróxido sódico (g/L)", get: (r) => r.resultados["Hidróxido sódico"] ?? r.inputs.sn_sosa ?? null, min: 50, max: 80, numFmt: "0.0", width: 18 },
+  { group: "SOSA MATE ALUFINISH", header: "Aluminio (g/L)", get: (r) => r.inputs.sn_al ?? r.resultados["Aluminio"] ?? null, numFmt: "0.00", width: 14 },
+  { group: "SOSA MATE ALUFINISH", header: "Aditivo (ptos)", get: (r) => r.resultados["Aditivo"] ?? r.inputs.sn_aditivo_r ?? null, min: 22, numFmt: "0.0", width: 14 },
+  { group: "SOSA FLASH", header: "Sosa (g/L) (50-70)", get: (r) => r.inputs.flash_a !== undefined ? r.inputs.flash_a * 20 - (r.inputs.flash_b ?? 0) * 6.7 : (r.inputs.flash_sosa ?? null), min: 50, max: 70, numFmt: "0.0", width: 16 },
+  { group: "SOSA FLASH", header: "Aluminio (g/L)", get: (r) => r.inputs.flash_b !== undefined ? (r.inputs.flash_b * 13.6) / 3.03 : (r.inputs.flash_al ?? null), max: 60, numFmt: "0.0", width: 14 },
+  { group: "NEUTRALIZADO 1", header: "Conc. g/L", get: (r) => r.inputs.n1_prod ?? r.resultados["Producto"] ?? null, min: 5, max: 15, numFmt: "0.00", width: 12 },
+  { group: "NEUTRALIZADO 1", header: "Ác. sulfúrico g/L", get: (r) => r.inputs.n1_acido ?? r.resultados["Ácido"] ?? null, min: 80, max: 120, numFmt: "0.0", width: 16 },
+  { group: "NEUTRALIZADO 2", header: "Conc. g/L", get: (r) => r.inputs.n2_prod ?? null, min: 5, max: 15, numFmt: "0.00", width: 12 },
+  { group: "NEUTRALIZADO 2", header: "Ác. sulfúrico g/L", get: (r) => r.inputs.n2_acido ?? null, min: 80, max: 120, numFmt: "0.0", width: 16 },
   { group: "ANODIZADO", header: "Nº Baño", get: (r) => r.inputs.an_bano ?? null, numFmt: "0", width: 10 },
-  { group: "ANODIZADO", header: "Sulf. total g/L", get: (r) => r.resultados["Sulfúrico total"] ?? null, min: 200, numFmt: "0.0", width: 14 },
-  { group: "ANODIZADO", header: "Sulf. libre g/L", get: (r) => r.resultados["Sulfúrico libre"] ?? null, min: 185, max: 200, numFmt: "0.0", width: 14 },
-  { group: "ANODIZADO", header: "Aluminio g/L", get: (r) => r.resultados["Aluminio"] ?? null, max: 14, numFmt: "0.00", width: 14 },
-  { group: "COLOR", header: "Estaño/Bronce conc. (g/L)", get: (r) => r.resultados["Concentración producto"] ?? null, min: 15, max: 18, numFmt: "0.00", width: 18 },
-  { group: "COLOR", header: "Ác. sulfúrico (g/L)", get: (r) => r.resultados["Ácido sulfúrico"] ?? null, min: 19, max: 20, numFmt: "0.00", width: 16 },
-  { group: "ORO", header: "Conc. (g/L)", get: (r) => r.resultados["Producto"] ?? null, min: 8, max: 15, numFmt: "0.00", width: 12 },
-  { group: "ORO", header: "Ác. sulfúrico (g/L)", get: (r) => r.resultados["Ácido sulfúrico"] ?? null, min: 25, max: 28, numFmt: "0.00", width: 16 },
-  { group: "SELLADO EN FRÍO", header: "pH", get: (r) => r.resultados["pH"] ?? r.inputs.sf_ph ?? null, numFmt: "0.00", width: 10 },
-  { group: "SELLADO EN FRÍO", header: "Conc. g/L", get: (r) => r.resultados["Producto"] ?? null, min: 6, max: 8, numFmt: "0.00", width: 12 },
-  { group: "CURADO", header: "Tª", get: (r) => r.inputs.cu_temp ?? null, numFmt: "0.0", width: 10 },
-  { group: "CURADO", header: "Conductividad µS", get: (r) => r.inputs.cu_cond ?? null, max: 100, numFmt: "0.0", width: 16 },
-  { group: "CURADO", header: "pH", get: (r) => r.inputs.cu_ph ?? null, numFmt: "0.00", width: 10 },
+  { group: "ANODIZADO", header: "Sulf. total g/L", get: (r) => r.resultados["Sulfúrico total"] ?? r.inputs.an_sulf_total ?? null, min: 200, numFmt: "0.0", width: 14 },
+  { group: "ANODIZADO", header: "Sulf. libre g/L", get: (r) => r.resultados["Sulfúrico libre"] ?? r.inputs.an_sulf_libre ?? null, min: 185, max: 200, numFmt: "0.0", width: 14 },
+  { group: "ANODIZADO", header: "Aluminio g/L", get: (r) => r.inputs.an_al ?? r.resultados["Aluminio"] ?? null, max: 14, numFmt: "0.00", width: 14 },
+  { group: "COLOR", header: "Estaño/Bronce conc. (g/L)", get: (r) => r.inputs.co_estano ?? r.inputs.co_producto ?? r.resultados["Concentración producto"] ?? null, min: 15, max: 18, numFmt: "0.00", width: 18 },
+  { group: "COLOR", header: "Ác. sulfúrico (g/L)", get: (r) => r.inputs.co_acido ?? r.resultados["Ácido sulfúrico"] ?? null, min: 19, max: 20, numFmt: "0.00", width: 16 },
+  { group: "ORO", header: "Conc. (g/L)", get: (r) => r.inputs.oro_prod ?? null, min: 8, max: 15, numFmt: "0.00", width: 12 },
+  { group: "ORO", header: "Ác. sulfúrico (g/L)", get: (r) => r.inputs.oro_acido ?? null, min: 25, max: 28, numFmt: "0.00", width: 16 },
+  { group: "SELLADO EN FRÍO", header: "pH", get: (r) => r.inputs.sf_ph ?? r.inputs.sf_ph_r ?? r.resultados["pH"] ?? null, numFmt: "0.00", width: 10 },
+  { group: "SELLADO EN FRÍO", header: "Conc. g/L", get: (r) => r.inputs.sf_prod ?? null, min: 6, max: 8, numFmt: "0.00", width: 12 },
+  { group: "CURADO", header: "Tª", get: (r) => r.inputs.cu_temp ?? r.inputs.cu_temp_r ?? null, numFmt: "0.0", width: 10 },
+  { group: "CURADO", header: "Conductividad µS", get: (r) => r.inputs.cu_cond ?? r.inputs.cu_cond_r ?? null, max: 100, numFmt: "0.0", width: 16 },
+  { group: "CURADO", header: "pH", get: (r) => r.inputs.cu_ph ?? r.inputs.cu_ph_r ?? null, numFmt: "0.00", width: 10 },
 ];
 
 // --- EXTRAS columns ---
@@ -466,13 +468,13 @@ const EXTRAS_COLS: ColSpec[] = [
   { group: "PÉRDIDA DE PESO", header: "Área (dm²)", get: (r) => r.inputs.pp_area ?? null, numFmt: "0.0000", width: 12 },
   { group: "PÉRDIDA DE PESO", header: "Peso inicial (mg)", get: (r) => r.inputs.pp_pi ?? null, numFmt: "0.0000", width: 16 },
   { group: "PÉRDIDA DE PESO", header: "Peso final (mg)", get: (r) => r.inputs.pp_pf ?? null, numFmt: "0.0000", width: 16 },
-  { group: "PÉRDIDA DE PESO", header: "Pérdida (mg/dm²)", max: 30, get: (r) => r.resultados["Pérdida de peso"] ?? null, numFmt: "0.000", width: 16 },
+  { group: "PÉRDIDA DE PESO", header: "Pérdida (mg/dm²)", max: 30, get: (r) => r.resultados["Pérdida de peso"] ?? r.inputs.pp_perdida ?? null, numFmt: "0.000", width: 16 },
   { group: "AL DISUELTO LACADO", header: "Vb (ml)", get: (r) => r.inputs.ad_vb ?? null, numFmt: "0.00", width: 10 },
   { group: "AL DISUELTO LACADO", header: "Va (ml)", get: (r) => r.inputs.ad_va ?? null, numFmt: "0.00", width: 10 },
-  { group: "AL DISUELTO LACADO", header: "Al disuelto (g/L)", max: 2, get: (r) => r.resultados["Aluminio disuelto"] ?? null, numFmt: "0.000", width: 16 },
+  { group: "AL DISUELTO LACADO", header: "Al disuelto (g/L)", max: 2, get: (r) => r.resultados["Aluminio disuelto"] ?? r.inputs.al_disuelto ?? null, numFmt: "0.000", width: 16 },
   { group: "ZIRCONIO LACADO", header: "Absorbancia (mAbs)", get: (r) => r.inputs.zr_abs ?? null, numFmt: "0.00", width: 18 },
   { group: "ZIRCONIO LACADO", header: "[Zr] (mg/L)", get: (r) => r.resultados["[Zr]"] ?? null, numFmt: "0.00", width: 12 },
-  { group: "ZIRCONIO LACADO", header: "PC (mg/m²)", min: 0.5, max: 15, get: (r) => r.resultados["PC"] ?? null, numFmt: "0.00", width: 14 },
+  { group: "ZIRCONIO LACADO", header: "PC (mg/m²)", min: 0.5, max: 15, get: (r) => r.resultados["PC"] ?? r.inputs.zr_pc_lacado ?? null, numFmt: "0.00", width: 14 },
 ];
 
 const SECTION_COLS: Record<SectionKey, ColSpec[]> = {
