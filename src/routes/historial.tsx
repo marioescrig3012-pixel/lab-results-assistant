@@ -172,32 +172,13 @@ function Historial() {
               className="w-40"
             />
           </div>
-          <Button variant="outline" onClick={downloadTemplate}>
-  <FileDown className="mr-2 size-4" />
-  Plantilla
-</Button>
-<Button variant="outline" onClick={downloadTemplateHistorica}>
-  <FileDown className="mr-2 size-4" />
-  Plantilla histórica
-</Button>
           <Button
             variant="outline"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={importing}
+            onClick={downloadTemplateHistorica}
           >
-            <Upload className="mr-2 size-4" />
-            {importing ? "Importando…" : "Importar"}
+            <FileDown className="mr-2 size-4" />
+            Plantilla histórica
           </Button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".xlsx"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) handleImport(f);
-            }}
-          />
           <Button
   variant="outline"
   onClick={() => fileInputHistRef.current?.click()}
