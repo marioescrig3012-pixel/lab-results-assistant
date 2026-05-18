@@ -408,21 +408,21 @@ const FILL_OK = "FFECFDF5";
 // --- LACADO columns (matches user's Excel template) ---
 const LACADO_COLS: ColSpec[] = [
   { group: "DESENGRASE 1", header: "Desengrase 1 (mg/L NaOH)", get: (r) => r.inputs.des1_naoh ?? null, numFmt: "0.00", width: 18 },
-  { group: "DESENGRASE 1", header: "CONCENTRACION %", get: (r) => r.resultados["Concentración Desengrase 1"] ?? null, min: 0.5, max: 1.5, numFmt: "0.000", width: 16 },
+  { group: "DESENGRASE 1", header: "CONCENTRACION %", get: (r) => r.resultados["Concentración Desengrase 1"] ?? r.inputs.des1_conc ?? null, min: 0.5, max: 1.5, numFmt: "0.000", width: 16 },
   { group: "DESENGRASE 1", header: "TEMPERATURA ºC", get: (r) => r.inputs.des1_temp ?? null, numFmt: "0.0", width: 14 },
   { group: "DESENGRASE 2", header: "Desengrase 2 (mg/L NaOH)", get: (r) => r.inputs.des2_naoh ?? null, numFmt: "0.00", width: 18 },
-  { group: "DESENGRASE 2", header: "CONCENTRACION %", get: (r) => r.resultados["Concentración Desengrase 2"] ?? null, min: 0.5, max: 1.5, numFmt: "0.000", width: 16 },
+  { group: "DESENGRASE 2", header: "CONCENTRACION %", get: (r) => r.resultados["Concentración Desengrase 2"] ?? r.inputs.des2_conc ?? null, min: 0.5, max: 1.5, numFmt: "0.000", width: 16 },
   { group: "DESENGRASE 2", header: "TEMPERATURA ºC", get: (r) => r.inputs.des2_temp ?? null, numFmt: "0.0", width: 14 },
   { group: "NO CROMICO", header: "Tª", get: (r) => r.inputs.nc_temp ?? null, numFmt: "0.0", width: 10 },
   { group: "NO CROMICO", header: "pH", get: (r) => r.resultados["pH"] ?? r.inputs.nc_ph ?? null, min: 2.2, max: 3.0, numFmt: "0.00", width: 10 },
-  { group: "NO CROMICO", header: "CONCENTRACIÓN ptos", get: (r) => r.resultados["Concentración No Crómico"] ?? null, min: 1.5, max: 4.2, numFmt: "0.00", width: 18 },
-  { group: "AGUA LAVADO", header: "CONDUCTIVIDAD µS/cm", get: (r) => r.resultados["Agua desmineralizada"] ?? r.inputs.agua_desmi ?? null, max: 30, numFmt: "0.0", width: 20 },
+  { group: "NO CROMICO", header: "CONCENTRACIÓN ptos", get: (r) => r.resultados["Concentración No Crómico"] ?? r.inputs.nc_conc ?? null, min: 1.5, max: 4.2, numFmt: "0.00", width: 18 },
+  { group: "AGUA LAVADO", header: "CONDUCTIVIDAD µS/cm", get: (r) => r.resultados["Agua desmineralizada"] ?? r.inputs.agua_desmi ?? r.inputs.cond_nocromico ?? null, max: 30, numFmt: "0.0", width: 20 },
   { group: "TASA DE ATAQUE", header: "PESO INICIAL (g)", get: (r) => r.inputs.p_ini ?? null, numFmt: "0.0000", width: 16 },
   { group: "TASA DE ATAQUE", header: "PESO FINAL (g)", get: (r) => r.inputs.p_fin ?? null, numFmt: "0.0000", width: 16 },
-  { group: "TASA DE ATAQUE", header: "g/m²", get: (r) => r.resultados["Tasa de ataque"] ?? null, min: 1, numFmt: "0.000", width: 12 },
+  { group: "TASA DE ATAQUE", header: "g/m²", get: (r) => r.resultados["Tasa de ataque"] ?? r.inputs.tasa_ataque ?? null, min: 1, numFmt: "0.000", width: 12 },
   { group: "ZIRCONIO", header: "Absorbancia (mAbs)", get: (r) => r.inputs.abs ?? null, numFmt: "0.00", width: 18 },
   { group: "ZIRCONIO", header: "Zr (mg/L)", get: (r) => r.resultados["[Zr]"] ?? null, numFmt: "0.00", width: 12 },
-  { group: "ZIRCONIO", header: "PC (mg/m²)", get: (r) => r.resultados["PC"] ?? null, min: 0.5, max: 15, numFmt: "0.00", width: 14 },
+  { group: "ZIRCONIO", header: "PC (mg/m²)", get: (r) => r.resultados["PC"] ?? r.inputs.zirconio_pc ?? null, min: 0.5, max: 15, numFmt: "0.00", width: 14 },
 ];
 
 // --- ANODIZADO columns (matches user's Excel template) ---
