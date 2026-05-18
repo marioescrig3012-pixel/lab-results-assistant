@@ -867,6 +867,8 @@ async function importFromXlsxHistorico(
         if (key === "__fecha__" || key === "__autor__" || key === "__observaciones__") continue;
         const n = cellToNumber(val);
         if (n === null) continue;
+        // Store every historic field also under inputs[histKey] so the export can read it directly
+        inputs[key] = n;
         if (inputKeyMap[key]) inputs[inputKeyMap[key]] = n;
         if (resultKeyMap[key]) resultados[resultKeyMap[key]] = n;
       }
