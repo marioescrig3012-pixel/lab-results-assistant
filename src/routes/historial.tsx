@@ -27,9 +27,8 @@ import {
   Legend,
 } from "recharts";
 import { format } from "date-fns";
-import { Download, FileSpreadsheet, Upload, FileDown } from "lucide-react";
+import { FileSpreadsheet, Upload, FileDown } from "lucide-react";
 import ExcelJS from "exceljs";
-import { computeResults, defaultInputs } from "@/lib/calculos";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 
