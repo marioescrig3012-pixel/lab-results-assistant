@@ -91,33 +91,63 @@ export function emailBody(
   resumenes: SeccionResumen[],
   observaciones: string
 ): string {
-  const lines: string[] = ["Buenas,", ""];
+  let html = `<p>Buenas,</p>`;
+
   for (const r of resumenes) {
     if (!r.hasInputs) continue;
-    lines.push(
-      `Por Orden del Director de Calidad, se pasa a detallar los resultados de las analíticas de la sección de ${r.title.toUpperCase()}:`
-    );
-    lines.push("");
+    html += `
+      <h3 style="color:#1e40af; border-bottom: 2px solid #1e40af; padding-bottom: 5px; margin-top: 25px;">
+        ${r.title.toUpperCase()}
+      </h3>
+      <p style="color:#6b7280; font-size:13px;">
+        Por Orden del Director de Calidad, se pasa a detallar los resultados de las analíticas de la sección de <strong>${r.title.toUpperCase()}</strong>:
+      </p>
+    `;
+
     let lastGroup = "";
     for (const it of r.items) {
       if (it.groupTitle !== lastGroup) {
-        if (lastGroup !== "") lines.push("");
-        lines.push(`- ${it.groupTitle}:`);
+        if (lastGroup !== "") html += `</table><br>`;
+        html += `
+          <p style="margin:10px 0 4px 0;">
+            <strong style="color:#374151;">— ${it.groupTitle}:</strong>
+          </p>
+          <table style="width:100%; border-collapse:collapse; font-size:13px;">
+        `;
         lastGroup = it.groupTitle;
       }
-      const flag = it.status === "warn" ? " FUERA DE RANGO ⚠️" : "";
-      const range = it.rangeLabel ? ` (${it.rangeLabel})` : "";
-      lines.push(
-        `${it.label}: ${it.formatted}${it.unit ? " " + it.unit : ""}${range}${flag}`
-      );
+
+      const fuera = it.status === "warn";
+      const bgColor = fuera ? "#fef2f2" : "#f0fdf4";
+      const textColor = fuera ? "#991b1b" : "#166534";
+      const icon = fuera ? "⚠️" : "✓";
+
+      html += `
+        <tr style="background-color:${bgColor}; border-bottom: 1px solid #e5e7eb;">
+          <td style="padding: 6px 10px; color:#374151;">${it.label}</td>
+          <td style="padding: 6px 10px; font-weight:bold; color:${textColor}; text-align:right;">
+            ${icon} ${it.formatted}${it.unit ? " " + it.unit : ""}
+          </td>
+          <td style="padding: 6px 10px; color:#9ca3af; font-size:11px; text-align:right;">
+            ${it.rangeLabel ?? ""}
+          </td>
+        </tr>
+      `;
     }
-    lines.push("");
+    html += `</table>`;
   }
+
   if (observaciones.trim()) {
-    lines.push("Observaciones:");
-    lines.push(observaciones.trim());
-    lines.push("");
+    html += `
+      <div style="margin-top:20px; background-color:#fefce8; border-left: 4px solid #ca8a04; padding: 12px 15px; border-radius: 4px;">
+        <strong style="color:#92400e;">📝 Observaciones:</strong>
+        <p style="margin: 5px 0 0 0; color:#374151;">${observaciones.trim()}</p>
+      </div>
+    `;
   }
-  lines.push("Saludos.");
-  return lines.join("\n");
+
+  html += `<p style="margin-top:25px; color:#374151;">Saludos.</p>`;
+
+  return html;
+}
 }
