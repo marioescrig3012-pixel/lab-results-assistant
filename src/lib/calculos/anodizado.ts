@@ -381,6 +381,26 @@ export const anodizado: SectionDef = {
         },
         { key: "sf_ph_r", label: "pH", unit: "pH", decimals: 2, compute: (i) => i.sf_ph },
       ],
+   },
+    {
+      key: "perdida_peso",
+      title: "PÉRDIDA DE PESO ANODIZADO",
+      inputs: [
+        { key: "pp_area", label: "Área anodizada", unit: "dm²", default: 0.001, step: 0.0001 },
+        { key: "pp_pi", label: "Peso inicial", unit: "mg", default: 0, step: 0.0001 },
+        { key: "pp_pf", label: "Peso final tras ensayo", unit: "mg", default: 0, step: 0.0001 },
+      ],
+      results: [
+        {
+          key: "pp",
+          label: "Pérdida de peso",
+          unit: "mg/dm²",
+          rangeLabel: "≈ 10 mg/dm² · máx. 30 mg/dm²",
+          max: 30,
+          decimals: 3,
+          compute: (i) => (i.pp_area > 0 ? (i.pp_pi - i.pp_pf) / i.pp_area : NaN),
+        },
+      ],
     },
   ],
 };
