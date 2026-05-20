@@ -153,6 +153,25 @@ export const lacado: SectionDef = {
           compute: (i) => zrFromAbs(i.abs) * i.zr_sup,
         },
       ],
+  },
+    {
+      key: "al_disuelto",
+      title: "ALUMINIO DISUELTO EN DESENGRASE",
+      inputs: [
+        { key: "ad_vb", label: "Vb · NaOH 0,1N (fenolftaleína)", unit: "ml", default: 0 },
+        { key: "ad_va", label: "Va · NaOH 0,1N (azul bromofenol)", unit: "ml", default: 0 },
+      ],
+      results: [
+        {
+          key: "ad",
+          label: "Aluminio disuelto",
+          unit: "g/L",
+          rangeLabel: "máx. 2 g/L",
+          max: 2,
+          decimals: 3,
+          compute: (i) => (i.ad_vb - i.ad_va) * 1.86 - 1.6,
+        },
+      ],
     },
   ],
 };
