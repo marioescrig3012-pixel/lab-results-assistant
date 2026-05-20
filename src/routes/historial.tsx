@@ -422,7 +422,8 @@ const LACADO_COLS: ColSpec[] = [
   { group: "ZIRCONIO", header: "Absorbancia (mAbs)", get: (r) => r.inputs.abs ?? null, numFmt: "0.00", width: 18 },
   { group: "ZIRCONIO", header: "Zr (mg/L)", get: (r) => r.resultados["[Zr]"] ?? null, numFmt: "0.00", width: 12 },
   { group: "ZIRCONIO", header: "PC (mg/m²)", get: (r) => r.resultados["PC"] ?? null, min: 0.5, max: 15, numFmt: "0.00", width: 14 },
-  { group: "ALUMINIO DISUELTO", header: "Aluminio disuelto (g/L)", get: (r) => r.resultados["Aluminio disuelto"] ?? null, max: 2, numFmt: "0.000", width: 18 },
+  { group: "ALUMINIO DISUELTO DESENGRASE 1", header: "Aluminio disuelto (g/L)", get: (r) => r.resultados["Aluminio disuelto"] ?? null, max: 2, numFmt: "0.000", width: 18 },
+  { group: "ALUMINIO DISUELTO DESENGRASE 2", header: "Aluminio disuelto (g/L)", get: (r) => r.resultados["Aluminio disuelto"] ?? null, max: 2, numFmt: "0.000", width: 18 },
 ];
 // --- ANODIZADO columns (matches user's Excel template) ---
 const ANODIZADO_COLS: ColSpec[] = [
