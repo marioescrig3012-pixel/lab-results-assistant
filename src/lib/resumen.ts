@@ -150,4 +150,3 @@ export function emailBody(
 
   return html;
 }
-}
