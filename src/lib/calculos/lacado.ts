@@ -156,7 +156,7 @@ export const lacado: SectionDef = {
   },
     {
       key: "al_disuelto",
-      title: "ALUMINIO DISUELTO EN DESENGRASE",
+      title: "ALUMINIO DISUELTO EN DESENGRASE 1",
       inputs: [
         { key: "ad_vb", label: "Vb · NaOH 0,1N (fenolftaleína)", unit: "ml", default: 0 },
         { key: "ad_va", label: "Va · NaOH 0,1N (azul bromofenol)", unit: "ml", default: 0 },
@@ -175,7 +175,7 @@ export const lacado: SectionDef = {
   },
      {
       key: "al_disuelto",
-      title: "ALUMINIO DISUELTO EN DESENGRASE",
+      title: "ALUMINIO DISUELTO EN DESENGRASE 2",
       inputs: [
         { key: "ad_vb", label: "Vb · NaOH 0,1N (fenolftaleína)", unit: "ml", default: 0 },
         { key: "ad_va", label: "Va · NaOH 0,1N (azul bromofenol)", unit: "ml", default: 0 },
