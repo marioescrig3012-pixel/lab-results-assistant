@@ -153,13 +153,13 @@ function ResumenPage() {
         );
         if (dests.length === 0) continue;
         const cuerpo = emailsPorSeccion.get(r.key) ?? "";
-        const fecha = new Date().toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" });
-       const now = new Date();
-        const dia = String(now.getDate()).padStart(2, "0");
-        const mes = String(now.getMonth() + 1).padStart(2, "0");
-        const anyo = now.getFullYear();
-        const fecha = `${dia}-${mes}-${anyo}`;
-        const asunto = `ANALITICAS LABORATORIO - ${r.title.toUpperCase()} - ${fecha}`;
+        const now = new Date();
+const dia = String(now.getDate()).padStart(2, "0");
+const mes = String(now.getMonth() + 1).padStart(2, "0");
+const anyo = now.getFullYear();
+const fecha = `${dia}-${mes}-${anyo}`;
+const asunto = `ANALITICAS LABORATORIO - ${r.title.toUpperCase()} - ${fecha}`;
+       
         for (const d of dests) {
           try {
             await emailjs.send(
