@@ -421,9 +421,9 @@ const LACADO_COLS: ColSpec[] = [
   { group: "TASA DE ATAQUE", header: "g/m²", get: (r) => r.resultados["Tasa de ataque"] ?? r.inputs.tasa_ataque ?? null, min: 1, numFmt: "0.000", width: 12 },
   { group: "ZIRCONIO", header: "Absorbancia (mAbs)", get: (r) => r.inputs.abs ?? null, numFmt: "0.00", width: 18 },
   { group: "ZIRCONIO", header: "Zr (mg/L)", get: (r) => r.resultados["[Zr]"] ?? null, numFmt: "0.00", width: 12 },
-  { group: "ZIRCONIO", header: "PC (mg/m²)", get: (r) => r.resultados["PC"] ?? r.inputs.zirconio_pc ?? null, min: 0.5, max: 15, numFmt: "0.00", width: 14 },
+  { group: "ZIRCONIO", header: "PC (mg/m²)", get: (r) => r.resultados["PC"] ?? null, min: 0.5, max: 15, numFmt: "0.00", width: 14 },
+  { group: "ALUMINIO DISUELTO", header: "Aluminio disuelto (g/L)", get: (r) => r.resultados["Aluminio disuelto"] ?? null, max: 2, numFmt: "0.000", width: 18 },
 ];
-
 // --- ANODIZADO columns (matches user's Excel template) ---
 const ANODIZADO_COLS: ColSpec[] = [
   { group: "DESENGRASE 1", header: "Concentración %", get: (r) => r.resultados["Concentración Desengrase 1"] ?? r.inputs.des1_conc ?? null, min: 2, max: 4, numFmt: "0.00", width: 16 },
@@ -459,22 +459,11 @@ const ANODIZADO_COLS: ColSpec[] = [
   { group: "SELLADO EN FRÍO", header: "Conc. g/L", get: (r) => r.inputs.sf_prod ?? null, min: 6, max: 8, numFmt: "0.00", width: 12 },
   { group: "CURADO", header: "Tª", get: (r) => r.inputs.cu_temp ?? r.inputs.cu_temp_r ?? null, numFmt: "0.0", width: 10 },
   { group: "CURADO", header: "Conductividad µS", get: (r) => r.inputs.cu_cond ?? r.inputs.cu_cond_r ?? null, max: 100, numFmt: "0.0", width: 16 },
-  { group: "CURADO", header: "pH", get: (r) => r.inputs.cu_ph ?? r.inputs.cu_ph_r ?? null, numFmt: "0.00", width: 10 },
+  { group: "CURADO", header: "pH", get: (r) => r.inputs.cu_ph ?? null, numFmt: "0.00", width: 10 },
+  { group: "PÉRDIDA DE PESO", header: "Pérdida de peso (mg/dm²)", get: (r) => r.resultados["Pérdida de peso"] ?? null, max: 30, numFmt: "0.000", width: 20 },
 ];
-
 // --- EXTRAS columns ---
-const EXTRAS_COLS: ColSpec[] = [
-  { group: "PÉRDIDA DE PESO", header: "Área (dm²)", get: (r) => r.inputs.pp_area ?? null, numFmt: "0.0000", width: 12 },
-  { group: "PÉRDIDA DE PESO", header: "Peso inicial (mg)", get: (r) => r.inputs.pp_pi ?? null, numFmt: "0.0000", width: 16 },
-  { group: "PÉRDIDA DE PESO", header: "Peso final (mg)", get: (r) => r.inputs.pp_pf ?? null, numFmt: "0.0000", width: 16 },
-  { group: "PÉRDIDA DE PESO", header: "Pérdida (mg/dm²)", max: 30, get: (r) => r.resultados["Pérdida de peso"] ?? r.inputs.pp_perdida ?? null, numFmt: "0.000", width: 16 },
-  { group: "AL DISUELTO LACADO", header: "Vb (ml)", get: (r) => r.inputs.ad_vb ?? null, numFmt: "0.00", width: 10 },
-  { group: "AL DISUELTO LACADO", header: "Va (ml)", get: (r) => r.inputs.ad_va ?? null, numFmt: "0.00", width: 10 },
-  { group: "AL DISUELTO LACADO", header: "Al disuelto (g/L)", max: 2, get: (r) => r.resultados["Aluminio disuelto"] ?? r.inputs.al_disuelto ?? null, numFmt: "0.000", width: 16 },
-  { group: "ZIRCONIO LACADO", header: "Absorbancia (mAbs)", get: (r) => r.inputs.zr_abs ?? null, numFmt: "0.00", width: 18 },
-  { group: "ZIRCONIO LACADO", header: "[Zr] (mg/L)", get: (r) => r.resultados["[Zr]"] ?? null, numFmt: "0.00", width: 12 },
-  { group: "ZIRCONIO LACADO", header: "PC (mg/m²)", min: 0.5, max: 15, get: (r) => r.resultados["PC"] ?? r.inputs.zr_pc_lacado ?? null, numFmt: "0.00", width: 14 },
-];
+const EXTRAS_COLS: ColSpec[] = [];
 
 const SECTION_COLS: Record<SectionKey, ColSpec[]> = {
   lacado: LACADO_COLS,
