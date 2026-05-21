@@ -150,7 +150,7 @@ export const lacado: SectionDef = {
           min: 0.5,
           max: 15,
           decimals: 2,
-          compute: (i) => zrFromAbs(i.abs) * i.zr_sup,
+          compute: (i) => (zrFromAbs(i.abs)*(500 / 180))/3,
         },
       ],
   },
