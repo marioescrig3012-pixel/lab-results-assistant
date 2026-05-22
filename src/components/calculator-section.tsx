@@ -23,27 +23,27 @@ function CommaInput({
   value: number;
   onChange: (n: number) => void;
 }) {
-  const [text, setText] = React.useState(String(value ?? 0));
-  const [focused, setFocused] = React.useState(false);
-
-  React.useEffect(() => {
-    if (!focused) setText(String(value ?? 0));
-  }, [value, focused]);
-
   return (
     <Input
       id={id}
-      type="text"
+      type="number"
       inputMode="decimal"
-      value={text}
-      onFocus={(e) => { setFocused(true); e.target.select(); }}
-      onBlur={() => {
-        setFocused(false);
-        const n = Number(text.replace(",", "."));
-        if (Number.isFinite(n)) { onChange(n); setText(String(n)); }
-        else setText(String(value ?? 0));
+      step="any"
+      value={Number.isFinite(value) ? value : 0}
+      onKeyDown={(e) => {
+        if (e.key === ",") {
+          e.preventDefault();
+          const input = e.target as HTMLInputElement;
+          const pos = input.selectionStart ?? input.value.length;
+          const newVal = input.value.slice(0, pos) + "." + input.value.slice(pos);
+          const n = Number(newVal);
+          if (Number.isFinite(n)) onChange(n);
+        }
       }}
-      onChange={(e) => setText(e.target.value)}
+      onChange={(e) => {
+        const n = e.target.value === "" ? 0 : Number(e.target.value);
+        if (Number.isFinite(n)) onChange(n);
+      }}
       className="h-9 w-32 bg-[var(--highlight-input)] font-medium tabular-nums"
     />
   );
