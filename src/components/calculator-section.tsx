@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import React, { useMemo } from "react";
 import {
   computeResults,
   formatValue,
@@ -30,7 +31,40 @@ export function CalculatorSection({ sectionKey }: { sectionKey: SectionKey }) {
       else if (s === "warn") warn++;
     }
   }
+function CommaInput({
+  id,
+  value,
+  onChange,
+}: {
+  id: string;
+  value: number;
+  onChange: (n: number) => void;
+}) {
+  const [text, setText] = React.useState(
+    Number.isFinite(value) ? String(value).replace(".", ",") : "0"
+  );
 
+  return (
+    <Input
+      id={id}
+      type="text"
+      inputMode="decimal"
+      value={text}
+      onChange={(e) => {
+        const raw = e.target.value.replace(",", ".");
+        setText(e.target.value);
+        const n = raw === "" ? 0 : Number(raw);
+        if (Number.isFinite(n)) onChange(n);
+      }}
+      onBlur={() => {
+        const raw = text.replace(",", ".");
+        const n = raw === "" ? 0 : Number(raw);
+        setText(Number.isFinite(n) ? String(n).replace(".", ",") : "0");
+      }}
+      className="h-9 w-32 bg-[var(--highlight-input)] font-medium tabular-nums"
+    />
+  );
+}
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
@@ -55,20 +89,12 @@ export function CalculatorSection({ sectionKey }: { sectionKey: SectionKey }) {
                     {inp.label}
                     {inp.unit ? ` (${inp.unit})` : ""}
                   </Label>
-                 <Input
+                <CommaInput
                     id={inp.key}
-                    type="text"
-                    inputMode="decimal"
-                    value={Number.isFinite(inputs[inp.key]) ? String(inputs[inp.key]).replace(".", ",") : "0"}
-                    onChange={(e) => {
-                      const raw = e.target.value.replace(",", ".");
-                      const n = raw === "" ? 0 : Number(raw);
-                      setInputs(sectionKey, {
-                        ...inputs,
-                        [inp.key]: Number.isFinite(n) ? n : inputs[inp.key],
-                      });
-                    }}
-                    className="h-9 w-32 bg-[var(--highlight-input)] font-medium tabular-nums"
+                    value={inputs[inp.key]}
+                    onChange={(n) =>
+                      setInputs(sectionKey, { ...inputs, [inp.key]: n })
+                    }
                   />
                 </div>
               ))}
