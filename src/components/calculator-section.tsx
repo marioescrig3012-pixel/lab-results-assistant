@@ -14,40 +14,6 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { CheckCircle2, AlertTriangle } from "lucide-react";
 
-function CommaInput({
-  id,
-  value,
-  onChange,
-}: {
-  id: string;
-  value: number;
-  onChange: (n: number) => void;
-}) {
-  return (
-    <Input
-      id={id}
-      type="number"
-      inputMode="decimal"
-      step="any"
-      value={Number.isFinite(value) ? value : 0}
-      onKeyDown={(e) => {
-        if (e.key === ",") {
-          e.preventDefault();
-          const input = e.target as HTMLInputElement;
-          const pos = input.selectionStart ?? input.value.length;
-          const newVal = input.value.slice(0, pos) + "." + input.value.slice(pos);
-          const n = Number(newVal);
-          if (Number.isFinite(n)) onChange(n);
-        }
-      }}
-      onChange={(e) => {
-        const n = e.target.value === "" ? 0 : Number(e.target.value);
-        if (Number.isFinite(n)) onChange(n);
-      }}
-      className="h-9 w-32 bg-[var(--highlight-input)] font-medium tabular-nums"
-    />
-  );
-}
 export function CalculatorSection({ sectionKey }: { sectionKey: SectionKey }) {
   const section = getSection(sectionKey);
   const { state, setInputs } = useDraft();
@@ -89,12 +55,19 @@ export function CalculatorSection({ sectionKey }: { sectionKey: SectionKey }) {
                     {inp.label}
                     {inp.unit ? ` (${inp.unit})` : ""}
                   </Label>
-                  <CommaInput
+                  <Input
                     id={inp.key}
-                    value={inputs[inp.key]}
-                    onChange={(n) =>
-                      setInputs(sectionKey, { ...inputs, [inp.key]: n })
+                    type="number"
+                    inputMode="decimal"
+                    step={inp.step ?? "any"}
+                    value={Number.isFinite(inputs[inp.key]) ? inputs[inp.key] : 0}
+                    onChange={(e) =>
+                      setInputs(sectionKey, {
+                        ...inputs,
+                        [inp.key]: e.target.value === "" ? 0 : Number(e.target.value),
+                      })
                     }
+                    className="h-9 w-32 bg-[var(--highlight-input)] font-medium tabular-nums"
                   />
                 </div>
               ))}
