@@ -57,14 +57,14 @@ export function CalculatorSection({ sectionKey }: { sectionKey: SectionKey }) {
                   </Label>
                   <Input
                     id={inp.key}
-                    type="number"
+                    type="text"
                     inputMode="decimal"
                     step={inp.step ?? "any"}
                     value={Number.isFinite(inputs[inp.key]) ? inputs[inp.key] : 0}
                     onChange={(e) =>
                       setInputs(sectionKey, {
                         ...inputs,
-                        [inp.key]: e.target.value === "" ? 0 : Number(e.target.value),
+                       [inp.key]: e.target.value === "" ? 0 : Number(e.target.value.replace(",", ".")),
                       })
                     }
                     className="h-9 w-32 bg-[var(--highlight-input)] font-medium tabular-nums"
