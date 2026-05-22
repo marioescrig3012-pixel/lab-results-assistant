@@ -88,13 +88,52 @@ function CommaInput({
                     {inp.label}
                     {inp.unit ? ` (${inp.unit})` : ""}
                   </Label>
-                <CommaInput
-                    id={inp.key}
-                    value={inputs[inp.key]}
-                    onChange={(n) =>
-                      setInputs(sectionKey, { ...inputs, [inp.key]: n })
-                    }
-                  />
+               function CommaInput({
+  id,
+  value,
+  onChange,
+}: {
+  id: string;
+  value: number;
+  onChange: (n: number) => void;
+}) {
+  const [text, setText] = React.useState(() =>
+    Number.isFinite(value) ? String(value).replace(".", ",") : "0"
+  );
+  const [focused, setFocused] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!focused) {
+      setText(Number.isFinite(value) ? String(value).replace(".", ",") : "0");
+    }
+  }, [value, focused]);
+
+  return (
+    <Input
+      id={id}
+      type="text"
+      inputMode="decimal"
+      value={text}
+      onFocus={() => setFocused(true)}
+      onBlur={() => {
+        setFocused(false);
+        const raw = text.replace(",", ".");
+        const n = raw === "" ? 0 : Number(raw);
+        setText(Number.isFinite(n) ? String(n).replace(".", ",") : "0");
+      }}
+      onChange={(e) => {
+        const val = e.target.value;
+        if (/^-?\d*[,.]?\d*$/.test(val)) {
+          setText(val);
+          const raw = val.replace(",", ".");
+          const n = Number(raw);
+          if (Number.isFinite(n)) onChange(n);
+        }
+      }}
+      className="h-9 w-32 bg-[var(--highlight-input)] font-medium tabular-nums"
+    />
+  );
+}
                 </div>
               ))}
             </div>
