@@ -57,7 +57,7 @@ export function CalculatorSection({ sectionKey }: { sectionKey: SectionKey }) {
                   </Label>
                   <Input
                     id={inp.key}
-                    type="text"
+                    type="number"
                     inputMode="decimal"
                     step={inp.step ?? "any"}
                     value={Number.isFinite(inputs[inp.key]) ? inputs[inp.key] : 0}
@@ -65,6 +65,15 @@ export function CalculatorSection({ sectionKey }: { sectionKey: SectionKey }) {
                       setInputs(sectionKey, {
                         ...inputs,
                        [inp.key]: e.target.value === "" ? 0 : Number(e.target.value.replace(",", ".")),
+                        onKeyDown={(e) => {
+  if (e.key === ",") {
+    e.preventDefault();
+    const el = e.currentTarget;
+    const start = el.selectionStart ?? el.value.length;
+    const end = el.selectionEnd ?? el.value.length;
+    const newVal = el.value.slice(0, start) + "." + el.value.slice(end);
+    el.value = newVal;
+    el.setSelectionRange(start + 1, start + 1);
                       })
                     }
                     className="h-9 w-32 bg-[var(--highlight-input)] font-medium tabular-nums"
