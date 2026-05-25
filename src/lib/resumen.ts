@@ -91,51 +91,44 @@ export function emailBody(
   resumenes: SeccionResumen[],
   observaciones: string
 ): string {
-  let html = `<p>Buenas,</p>`;
+  let html = `<div style="font-family:Arial,sans-serif;font-size:14px;color:#1f2937;">`;
+  html += `<p>Buenas,</p>`;
 
   for (const r of resumenes) {
     if (!r.hasInputs) continue;
     html += `
-      <h3 style="color:#1e40af; border-bottom: 2px solid #1e40af; padding-bottom: 5px; margin-top: 25px;">
-        ${r.title.toUpperCase()}
-      </h3>
-      <p style="color:#6b7280; font-size:13px;">
-        Por Orden del Director de Calidad, se pasa a detallar los resultados de las analíticas de la sección de <strong>${r.title.toUpperCase()}</strong>:
-      </p>
+      <p>Por Orden del Director de Calidad, se pasa a detallar los resultados de las analíticas de la sección de <strong>${r.title.toUpperCase()}</strong>:</p>
     `;
 
     let lastGroup = "";
     for (const it of r.items) {
       if (it.groupTitle !== lastGroup) {
-        if (lastGroup !== "") html += `</table><br>`;
-        html += `
-          <p style="margin:10px 0 4px 0;">
-            <strong style="color:#374151;">— ${it.groupTitle}:</strong>
-          </p>
-          <table style="width:100%; border-collapse:collapse; font-size:13px;">
-        `;
+        if (lastGroup !== "") html += `<br>`;
+        html += `<p style="margin:8px 0 2px 0;"><strong>- ${it.groupTitle}:</strong></p>`;
         lastGroup = it.groupTitle;
       }
-
       const fuera = it.status === "warn";
-      const bgColor = fuera ? "#fef2f2" : "#f0fdf4";
-      const textColor = fuera ? "#991b1b" : "#166534";
+      const color = fuera ? "#991b1b" : "#166534";
       const icon = fuera ? "⚠️" : "✓";
-
-      html += `
-        <tr style="background-color:${bgColor}; border-bottom: 1px solid #e5e7eb;">
-          <td style="padding: 6px 10px; color:#374151;">${it.label}</td>
-          <td style="padding: 6px 10px; font-weight:bold; color:${textColor}; text-align:right;">
-            ${icon} ${it.formatted}${it.unit ? " " + it.unit : ""}
-          </td>
-          <td style="padding: 6px 10px; color:#9ca3af; font-size:11px; text-align:right;">
-            ${it.rangeLabel ?? ""}
-          </td>
-        </tr>
-      `;
+      const range = it.rangeLabel ? ` <span style="color:#9ca3af;font-size:12px;">(${it.rangeLabel})</span>` : "";
+      html += `<p style="margin:2px 0 2px 20px;color:${color};">
+        ${icon} ${it.label}: <strong>${it.formatted}${it.unit ? " " + it.unit : ""}</strong>${range}
+      </p>`;
     }
-    html += `</table>`;
+    html += `<br>`;
   }
+
+  if (observaciones.trim()) {
+    html += `
+      <p style="background:#fefce8;border-left:4px solid #ca8a04;padding:10px;margin-top:10px;">
+        <strong>📝 Observaciones:</strong><br>${observaciones.trim()}
+      </p>
+    `;
+  }
+
+  html += `<p style="margin-top:20px;">Saludos.</p></div>`;
+  return html;
+}
 
   if (observaciones.trim()) {
     html += `
