@@ -86,7 +86,6 @@ export function buildResumen(
     activeResultKeys,
   };
 }
-
 export function emailBody(
   resumenes: SeccionResumen[],
   observaciones: string
@@ -96,9 +95,7 @@ export function emailBody(
 
   for (const r of resumenes) {
     if (!r.hasInputs) continue;
-    html += `
-      <p>Por Orden del Director de Calidad, se pasa a detallar los resultados de las analíticas de la sección de <strong>${r.title.toUpperCase()}</strong>:</p>
-    `;
+    html += `<p>Por Orden del Director de Calidad, se pasa a detallar los resultados de las analíticas de la sección de <strong>${r.title.toUpperCase()}</strong>:</p>`;
 
     let lastGroup = "";
     for (const it of r.items) {
@@ -111,35 +108,15 @@ export function emailBody(
       const color = fuera ? "#991b1b" : "#166534";
       const icon = fuera ? "⚠️" : "✓";
       const range = it.rangeLabel ? ` <span style="color:#9ca3af;font-size:12px;">(${it.rangeLabel})</span>` : "";
-      html += `<p style="margin:2px 0 2px 20px;color:${color};">
-        ${icon} ${it.label}: <strong>${it.formatted}${it.unit ? " " + it.unit : ""}</strong>${range}
-      </p>`;
+      html += `<p style="margin:2px 0 2px 20px;color:${color};">${icon} ${it.label}: <strong>${it.formatted}${it.unit ? " " + it.unit : ""}</strong>${range}</p>`;
     }
     html += `<br>`;
   }
 
   if (observaciones.trim()) {
-    html += `
-      <p style="background:#fefce8;border-left:4px solid #ca8a04;padding:10px;margin-top:10px;">
-        <strong>📝 Observaciones:</strong><br>${observaciones.trim()}
-      </p>
-    `;
+    html += `<p style="background:#fefce8;border-left:4px solid #ca8a04;padding:10px;margin-top:10px;"><strong>📝 Observaciones:</strong><br>${observaciones.trim()}</p>`;
   }
 
   html += `<p style="margin-top:20px;">Saludos.</p></div>`;
-  return html;
-}
-
-  if (observaciones.trim()) {
-    html += `
-      <div style="margin-top:20px; background-color:#fefce8; border-left: 4px solid #ca8a04; padding: 12px 15px; border-radius: 4px;">
-        <strong style="color:#92400e;">📝 Observaciones:</strong>
-        <p style="margin: 5px 0 0 0; color:#374151;">${observaciones.trim()}</p>
-      </div>
-    `;
-  }
-
-  html += `<p style="margin-top:25px; color:#374151;">Saludos.</p>`;
-
   return html;
 }
