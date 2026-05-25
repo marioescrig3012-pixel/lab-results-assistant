@@ -108,7 +108,8 @@ export function emailBody(
       const color = fuera ? "#991b1b" : "#166534";
       const icon = fuera ? "⚠️" : "✓";
       const range = it.rangeLabel ? ` <span style="color:#9ca3af;font-size:12px;">(${it.rangeLabel})</span>` : "";
-      html += `<p style="margin:2px 0 2px 20px;color:${color};">${icon} ${it.label}: <strong>${it.formatted}${it.unit ? " " + it.unit : ""}</strong>${range}</p>`;
+      const bg = fuera ? "background:#fef2f2;border-left:3px solid #ef4444;" : "background:#f0fdf4;border-left:3px solid #22c55e;";
+    html += `<p style="margin:2px 0 2px 0;padding:4px 8px;${bg}color:${color};">${icon} ${it.label}: <strong>${it.formatted}${it.unit ? " " + it.unit : ""}</strong>${range}</p>`;
     }
     html += `<br>`;
   }
